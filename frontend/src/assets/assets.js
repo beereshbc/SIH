@@ -11,10 +11,7 @@ import img10 from "../assets/img10.webp";
 import img11 from "../assets/img11.webp";
 import img12 from "../assets/img12.svg";
 import img13 from "../assets/img13.svg";
-import vid1 from "../assets/vid1.mp4";
 import vid2 from "../assets/vid2.mp4";
-import vid3 from "../assets/vid3.mp4";
-import vid4 from "../assets/vid4.mp4";
 
 export const assets = {
   img1,
@@ -30,10 +27,7 @@ export const assets = {
   img11,
   img12,
   img13,
-  vid1,
   vid2,
-  vid3,
-  vid4,
 };
 
 export const ngos = [
