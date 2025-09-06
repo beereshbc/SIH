@@ -1,11 +1,13 @@
-
 import { motion, AnimatePresence } from "framer-motion";
+import React, { useState } from "react";
+import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
-  const [state, setState] = React.useState("login");
-  const [name, setName] = React.useState("");
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
+  const [state, setState] = useState("login");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const inputVariant = {
     hidden: { opacity: 0, x: -30 },
@@ -14,118 +16,125 @@ const Login = () => {
   };
 
   return (
-    <motion.form
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className="flex flex-col gap-4 m-auto mt-12 items-start p-8 py-12 w-80 sm:w-[352px] text-gray-500 rounded-lg shadow-xl border border-gray-200 bg-white"
-    >
-      {/* Heading */}
-      <p className="text-xl font-normal m-auto">
-        <span className="text-p2">User</span>{" "}
-        {state === "login" ? "Login" : "Sign Up"}
-      </p>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 font-sans">
+      <motion.form
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="flex flex-col gap-5 p-8 sm:p-10 w-80 sm:w-[400px] bg-white border border-gray-200 rounded-xl shadow-xl"
+      >
+        {/* Heading */}
+        <p className="text-xl sm:text-2xl font-semibold text-center text-gray-700 mb-2">
+          <span className="text-p2">User</span>{" "}
+          {state === "login" ? "Login" : "Sign Up"}
+        </p>
 
-      <AnimatePresence mode="wait">
-        {state === "register" && (
+        {/* Name Field */}
+        <AnimatePresence mode="wait">
+          {state === "register" && (
+            <motion.div
+              key="name"
+              variants={inputVariant}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={{ duration: 0.4 }}
+              className="relative w-full"
+            >
+              <label className="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                <User size={16} /> Name
+              </label>
+              <input
+                type="text"
+                placeholder="Enter your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full p-2 pl-10 rounded border border-gray-300 focus:ring-2 focus:ring-p2 focus:outline-none text-sm"
+                required
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Email Field */}
+        <AnimatePresence mode="wait">
           <motion.div
-            key="name"
+            key="email"
             variants={inputVariant}
             initial="hidden"
             animate="visible"
             exit="exit"
-            transition={{ duration: 0.4 }}
-            className="w-full"
+            transition={{ duration: 0.5 }}
+            className="relative w-full"
           >
-            <p>Name</p>
+            <label className="text-sm text-gray-500 mb-1 flex items-center gap-1">
+              <Mail size={16} /> Email
+            </label>
             <input
-              onChange={(e) => setName(e.target.value)}
-              value={name}
-              placeholder="type here"
-              className="border border-gray-200 rounded w-full p-2 mt-1 outline-indigo-500"
-              type="text"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-2 pl-10 rounded border border-gray-300 focus:ring-2 focus:ring-p2 focus:outline-none text-sm"
               required
             />
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key="email"
-          variants={inputVariant}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          transition={{ duration: 0.5 }}
-          className="w-full"
-        >
-          <p>Email</p>
-          <input
-            onChange={(e) => setEmail(e.target.value)}
-            value={email}
-            placeholder="type here"
-            className="border border-gray-200 rounded w-full p-2 mt-1 outline-indigo-500"
-            type="email"
-            required
-          />
-        </motion.div>
-      </AnimatePresence>
+        {/* Password Field */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key="password"
+            variants={inputVariant}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="relative w-full"
+          >
+            <label className="text-sm text-gray-500 mb-1 flex items-center gap-1">
+              <Lock size={16} /> Password
+            </label>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 pl-10 pr-10 rounded border border-gray-300 focus:ring-2 focus:ring-p2 focus:outline-none text-sm"
+              required
+            />
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-2 top-9 cursor-pointer text-gray-400"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </span>
+          </motion.div>
+        </AnimatePresence>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key="password"
-          variants={inputVariant}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="w-full"
-        >
-          <p>Password</p>
-          <input
-            onChange={(e) => setPassword(e.target.value)}
-            value={password}
-            placeholder="type here"
-            className="border border-gray-200 rounded w-full p-2 mt-1 outline-indigo-500"
-            type="password"
-            required
-          />
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Switch State */}
-      {state === "register" ? (
-        <p className="text-sm">
-          Already have account?{" "}
+        {/* Switch State */}
+        <p className="text-sm text-gray-500 text-center">
+          {state === "register"
+            ? "Already have an account?"
+            : "Create an account?"}{" "}
           <span
-            onClick={() => setState("login")}
-            className="text-indigo-500 cursor-pointer"
+            onClick={() => setState(state === "login" ? "register" : "login")}
+            className="text-p2 cursor-pointer font-medium"
           >
             click here
           </span>
         </p>
-      ) : (
-        <p className="text-sm">
-          Create an account?{" "}
-          <span
-            onClick={() => setState("register")}
-            className="text-p2 cursor-pointer"
-          >
-            click here
-          </span>
-        </p>
-      )}
 
-      {/* Submit Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="bg-p2 hover:bg-p2-600 transition-all text-white w-full py-2 rounded-md cursor-pointer"
-      >
-        {state === "register" ? "Create Account" : "Login"}
-      </motion.button>
-    </motion.form>
+        {/* Submit Button */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="bg-p2 hover:bg-p2-600 text-white w-full py-2 rounded-md font-medium transition-all"
+        >
+          {state === "register" ? "Create Account" : "Login"}
+        </motion.button>
+      </motion.form>
+    </div>
   );
 };
 
