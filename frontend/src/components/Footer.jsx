@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import {Link} from 'react-router-dom'
 
 const sectionVariant = {
   hidden: { opacity: 0, y: 30 },
@@ -15,7 +16,7 @@ const Footer = () => {
 
   return (
     <motion.footer
-      className="bg-black text-white py-12"
+      className="bg-black text-white py-12 rounded-t-2xl"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
@@ -54,13 +55,43 @@ const Footer = () => {
 
         {/* Right Section */}
         <motion.div custom={2} variants={sectionVariant} className="flex-1">
-          <h3 className="text-xl font-semibold mb-2">Follow Us</h3>
+          <h3 className="text-xl font-semibold mb-2">Links</h3>
+         
+          <ul >
+            <motion.p
+            whileHover={{ scale: 1.05, color: "#40A2E3" }}
+            className="cursor-pointer"
+          >
+            <li><Link to='/'>Home</Link> </li>
+          </motion.p>
           <motion.p
             whileHover={{ scale: 1.05, color: "#40A2E3" }}
             className="cursor-pointer"
           >
-            Facebook | Twitter | Instagram | LinkedIn
+            <li><Link to='/dashboard'>DashBoard</Link> </li>
           </motion.p>
+          <motion.p
+            whileHover={{ scale: 1.05, color: "#40A2E3" }}
+            className="cursor-pointer"
+          >
+            <li><Link to='/community'>Community</Link> </li>
+          </motion.p>
+          <motion.p
+            whileHover={{ scale: 1.05, color: "#40A2E3" }}
+            className="cursor-pointer"
+          >
+            <li><Link to='/registry'>Registry</Link> </li>
+          </motion.p>
+          <motion.p
+            whileHover={{ scale: 1.05, color: "#40A2E3" }}
+            className="cursor-pointer"
+          >
+            <li><Link to='/login'>Login</Link></li>
+          </motion.p>
+          </ul>
+            
+          
+          
         </motion.div>
       </div>
 
