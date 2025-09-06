@@ -2,12 +2,18 @@ import React from "react";
 import { assets } from "./assets/assets";
 import { Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
+import Registry from "./pages/Registry";
+import Dashboard from "./pages/Dashboard";
+import Community from "./pages/Community";
 
 const App = () => {
   return (
     <div>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/registry" element={<Registry />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/community" element={<Community />} />
       </Routes>
     </div>
   );

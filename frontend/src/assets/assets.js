@@ -67,3 +67,27 @@ export const ngos = [
       "Restoring degraded lands and wetlands with a focus on biodiversity and carbon capture projects.",
   },
 ];
+
+export const blogData = [
+  {
+    id: 1,
+    title: "Building Transparent Communities with Blockchain",
+    desc: "Blockchain technology can bring trust to community projects by making funding, resource allocation, and impact visible to everyone.",
+    image: img2,
+    date: "06/09/2025",
+  },
+  {
+    id: 2,
+    title: "Green Startups: Leading the CO₂ Reduction Movement 🌍",
+    desc: "Startups working on green technologies are showing how innovation can reduce carbon emissions and create sustainable jobs.",
+    image: img3,
+    date: "05/09/2025",
+  },
+  {
+    id: 3,
+    title: "Collaboration is the Key to Winning SIH 🏆",
+    desc: "Great ideas need great teams. Sharing, collaborating, and building together is what makes a community strong in hackathons.",
+    image: img4,
+    date: "04/09/2025",
+  },
+];

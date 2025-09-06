@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { motion, useAnimation } from "framer-motion";
 import { Menu, X } from "lucide-react";
@@ -11,22 +11,28 @@ const Navbar = () => {
     if (window.scrollY > window.innerHeight / 4) {
       controls.start({ opacity: 1, y: 0 });
     } else {
-      controls.start({ opacity: 0, y: -50 });
+      // If page is tall, hide until scrolled
+      if (document.body.scrollHeight > window.innerHeight + 50) {
+        controls.start({ opacity: 0, y: -50 });
+      } else {
+        // If page is short, always show
+        controls.start({ opacity: 1, y: 0 });
+      }
     }
   };
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll);
-    handleScroll(); // initial check
+    handleScroll(); // initial check (important for short pages)
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const navLinks = [
     { name: "Home", path: "/" },
+    { name: "Registry", path: "/registry" },
     { name: "Dashboard", path: "/dashboard" },
     { name: "Community", path: "/community" },
-    { name: "About", path: "/about" },
-    { name: "Contact", path: "/contact" },
+    { name: "SignUp", path: "/login" },
   ];
 
   return (
@@ -36,9 +42,9 @@ const Navbar = () => {
       transition={{ duration: 0.7, ease: "easeOut" }}
       className="fixed top-0 left-0 w-full z-50"
     >
-      <div className="max-w-3xl mx-10 md:mx-auto flex items-center justify-between px-6 py-2 rounded-xl shadow-lg mt-4  border border-gray-500 bg-[#005B4C] text-p1 backdrop-blur-md">
+      <div className="max-w-3xl mx-10 md:mx-auto flex items-center justify-between px-6 py-2 rounded-xl shadow-lg mt-4 border border-gray-500 bg-[#005B4C] text-p1 backdrop-blur-md">
         {/* Logo */}
-        <div className=" italic font-bold text-xl md:text-2xl playfont">
+        <div className="italic font-bold text-xl md:text-2xl playfont">
           BlueGreen
         </div>
 
@@ -52,8 +58,8 @@ const Navbar = () => {
                 className={({ isActive }) =>
                   `relative px-1 transition duration-300 ${
                     isActive
-                      ? " font-semibold after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-full after:h-[3px] after:rounded-full after:bg-white after:shadow-[0_0_12px_rgba(223,243,145,0.8)]"
-                      : " hover:text-white"
+                      ? "font-semibold after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-full after:h-[3px] after:rounded-full after:bg-white after:shadow-[0_0_12px_rgba(223,243,145,0.8)]"
+                      : "hover:text-white"
                   }`
                 }
               >
