@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import Webcam from "react-webcam";
 import Navbar from "../components/Navbar";
+import { pinata } from "../config/pinata";
+import { connectWallet } from "../utils/wallet";
+import { ethers } from "ethers";
+import BlueCarbonABI from "../abi/BlueCarbon.json";
+import { useAppContext } from "../context/AppContext";
+import toast from "react-hot-toast";
 
 /**
  * Registry.jsx
@@ -26,7 +32,7 @@ const webcamConstraints = {
   height: 720,
 };
 
-export default function Registry({ onSubmit }) {
+export default function Registry() {
   const [step, setStep] = useState(1);
 
   const [ngo, setNgo] = useState({ name: "", email: "", location: "" });
@@ -40,6 +46,9 @@ export default function Registry({ onSubmit }) {
     carbonStored: "",
     description: "",
   });
+
+  const { axios } = useAppContext();
+  const [walletAddress, setWalletAddress] = useState(null);
 
   const [images, setImages] = useState([]);
   const [message, setMessage] = useState("");
@@ -241,63 +250,186 @@ export default function Registry({ onSubmit }) {
       return next;
     });
   };
-
-  const handleEditCoords = (id, lat, lng) => {
-    setImages((prev) => {
-      const next = prev.map((img) =>
-        img.id === id ? { ...img, lat: lat || null, lng: lng || null } : img
-      );
-      localStorage.setItem("registry_images", JSON.stringify(next));
-      return next;
-    });
+  const handleConnectWallet = async () => {
+    try {
+      const { signer, address } = await connectWallet(); // your existing utility
+      setWalletAddress(address);
+      setNgo({ ...ngo, walletAddress: address }); // store in NGO state
+      setMessage(`Wallet connected: ${address}`);
+    } catch (err) {
+      console.error("Wallet connection failed:", err);
+      setMessage("Wallet connection failed: " + err.message);
+    }
   };
 
-  const handleSubmitProject = () => {
-    if (!ngo.name || !project.title) {
-      setMessage("Please fill NGO and project basics before submitting.");
-      return;
+  // const handleSubmitProject = () => {
+  //   if (!ngo.name || !project.title) {
+  //     setMessage("Please fill NGO and project basics before submitting.");
+  //     return;
+  //   }
+
+  //   const payload = {
+  //     projectId: "proj_" + Date.now(),
+  //     ngoId: "ngo_" + (ngo.email || "unknown"),
+  //     ngoName: ngo.name,
+  //     email: ngo.email,
+  //     ngoLocation: ngo.location,
+  //     project: { ...project },
+  //     images: [...images],
+  //     status: "pending",
+  //     submittedAt: new Date().toISOString(),
+  //   };
+
+  //   // In a real app, call backend API here. For demo we either call onSubmit prop or console.log
+  //   if (typeof onSubmit === "function") {
+  //     onSubmit(payload);
+  //     setMessage("Project payload sent to parent onSubmit handler.");
+  //   } else {
+  //     console.log("[Registry] Submit payload:", payload);
+  //     setMessage("Project submit (demo) logged to console.");
+  //   }
+
+  //   // Clear draft after submit
+  //   localStorage.removeItem("registry_ngo");
+  //   localStorage.removeItem("registry_project");
+  //   localStorage.removeItem("registry_images");
+
+  //   // Reset
+  //   setStep(1);
+  //   setNgo({ name: "", email: "", location: "" });
+  //   setProject({
+  //     title: "",
+  //     ecosystem: "Mangrove",
+  //     location: "",
+  //     treesPlanted: "",
+  //     areaRestored: "",
+  //     carbonStored: "",
+  //     description: "",
+  //   });
+  //   setImages([]);
+  // };
+
+  // Uploaddddddddddddddddddddddddddd-----------------------
+
+  // Convert base64 → File
+  function dataURLtoFile(dataUrl, filename) {
+    const arr = dataUrl.split(",");
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) u8arr[n] = bstr.charCodeAt(n);
+    return new File([u8arr], filename, { type: mime });
+  }
+
+  // Upload to Pinata
+  async function uploadImagesToPinata(images) {
+    const ipfsHashes = [];
+    for (let i = 0; i < images.length; i++) {
+      const file = dataURLtoFile(images[i].dataUrl, `image_${i}.jpg`);
+      try {
+        const result = await pinata.upload.public.file(file, {
+          name: `image_${i}.jpg`,
+        });
+        ipfsHashes.push(result.cid); // v2 uses `cid` instead of `IpfsHash`
+      } catch (err) {
+        console.error("Pinata upload failed for image", i, err);
+        throw err; // optional: stop upload if any fails
+      }
     }
+    return ipfsHashes;
+  }
 
-    const payload = {
-      projectId: "proj_" + Date.now(),
-      ngoId: "ngo_" + (ngo.email || "unknown"),
-      ngoName: ngo.name,
-      email: ngo.email,
-      ngoLocation: ngo.location,
-      project: { ...project },
-      images: [...images],
-      status: "pending",
-      submittedAt: new Date().toISOString(),
-    };
+  const handleSubmitProject = async () => {
+    try {
+      if (!ngo.name || !ngo.email || !ngo.location) {
+        setMessage("Please fill all NGO details before submitting.");
+        return;
+      }
+      if (!project.title || !project.treesPlanted) {
+        setMessage("Please fill project title and trees planted.");
+        return;
+      }
+      if (images.length === 0) {
+        setMessage("Please capture or upload at least one image.");
+        return;
+      }
 
-    // In a real app, call backend API here. For demo we either call onSubmit prop or console.log
-    if (typeof onSubmit === "function") {
-      onSubmit(payload);
-      setMessage("Project payload sent to parent onSubmit handler.");
-    } else {
-      console.log("[Registry] Submit payload:", payload);
-      setMessage("Project submit (demo) logged to console.");
+      // Optional: connect wallet if you want blockchain submission
+      let wallet = walletAddress;
+      if (!wallet) {
+        const { address } = await connectWallet();
+        wallet = address;
+        setWalletAddress(wallet);
+      }
+
+      // Upload images to Pinata (IPFS) and get hashes
+      const ipfsHashes = await uploadImagesToPinata(images);
+
+      // Build backend payload
+      const payload = {
+        ngoId: "ngo_" + (ngo.email || Date.now()), // unique ID fallback
+        ngoName: ngo.name,
+        ngoLocation: ngo.location,
+        email: ngo.email,
+        walletAddress: wallet,
+        project: {
+          projectId: "proj_" + Date.now(), // <-- add this line
+          title: project.title,
+          ecosystem: project.ecosystem,
+          location: project.location,
+          treesPlanted: Number(project.treesPlanted),
+          areaRestored: Number(project.areaRestored || 0),
+          carbonStored: Number(project.carbonStored || 0),
+          description: project.description,
+          submittedAt: new Date().toISOString(),
+        },
+        images: images.map((img, idx) => ({
+          id: idx,
+          dataUrl: img.dataUrl,
+          ipfsHash: ipfsHashes[idx],
+          lat: img.lat != null ? Number(img.lat) : 0,
+          lng: img.lng != null ? Number(img.lng) : 0,
+          timestamp: img.timestamp,
+          gpsError: img.gpsError || null,
+        })),
+        status: "pending", // default status
+      };
+
+      // POST to backend
+      const response = await axios.post("/api/user/projects", payload);
+
+      if (response.data.success) {
+        setMessage("✅ Project submitted successfully!");
+        // Clear drafts
+        localStorage.removeItem("registry_ngo");
+        localStorage.removeItem("registry_project");
+        localStorage.removeItem("registry_images");
+        // Reset state
+        setStep(1);
+        setNgo({ name: "", email: "", location: "" });
+        setProject({
+          title: "",
+          ecosystem: "Mangrove",
+          location: "",
+          treesPlanted: "",
+          areaRestored: "",
+          carbonStored: "",
+          description: "",
+        });
+        setImages([]);
+      } else {
+        setMessage("❌ Submission failed: " + response.data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Submission error: " + err.message);
     }
-
-    // Clear draft after submit
-    localStorage.removeItem("registry_ngo");
-    localStorage.removeItem("registry_project");
-    localStorage.removeItem("registry_images");
-
-    // Reset
-    setStep(1);
-    setNgo({ name: "", email: "", location: "" });
-    setProject({
-      title: "",
-      ecosystem: "Mangrove",
-      location: "",
-      treesPlanted: "",
-      areaRestored: "",
-      carbonStored: "",
-      description: "",
-    });
-    setImages([]);
   };
+
+  if (message) {
+    toast.success(message);
+  }
 
   return (
     <div className="flex flex-col gap-y-14">
@@ -334,8 +466,6 @@ export default function Registry({ onSubmit }) {
             3. Upload & Capture
           </div>
         </div>
-
-        {message && <div className="mb-4 text-sm text-gray-700">{message}</div>}
 
         {/* STEP 1: NGO Details */}
         {step === 1 && (
@@ -639,6 +769,21 @@ export default function Registry({ onSubmit }) {
               >
                 Submit Project
               </button>
+              <div className="mt-2">
+                {walletAddress ? (
+                  <div className="text-green-600 font-medium">
+                    Wallet Connected: {walletAddress.slice(0, 6)}...
+                    {walletAddress.slice(-4)}
+                  </div>
+                ) : (
+                  <button
+                    className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                    onClick={handleConnectWallet}
+                  >
+                    Connect Wallet
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

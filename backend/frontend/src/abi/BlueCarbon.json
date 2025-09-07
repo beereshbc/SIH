@@ -1,0 +1,332 @@
+{
+  "address": "0xf5E0ab061835352303399a6C7494B6680cA52772",
+  "abi": [
+    {
+      "type": "constructor",
+      "stateMutability": "undefined",
+      "payable": false,
+      "inputs": []
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "SubmissionApproved",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "submissionId",
+          "indexed": false
+        },
+        {
+          "type": "address",
+          "name": "ngoWallet",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "credits",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "SubmissionCreated",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "submissionId",
+          "indexed": false
+        },
+        {
+          "type": "address",
+          "name": "ngoWallet",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "SubmissionRejected",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "submissionId",
+          "indexed": false
+        },
+        {
+          "type": "address",
+          "name": "ngoWallet",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "admin",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "approveSubmission",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_submissionId"
+        },
+        {
+          "type": "uint256",
+          "name": "_credits"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "carbonCredits",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getCarbonCredits",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "_ngoWallet"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getImagesCount",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_submissionId"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getNgoSubmissions",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "_ngoWallet"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256[]",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ngoSubmissions",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": ""
+        },
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "rejectSubmission",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_submissionId"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "submissionCount",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "submissions",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "string",
+          "name": "title"
+        },
+        {
+          "type": "string",
+          "name": "description"
+        },
+        {
+          "type": "string",
+          "name": "ecosystem"
+        },
+        {
+          "type": "string",
+          "name": "location"
+        },
+        {
+          "type": "uint256",
+          "name": "areaRestored"
+        },
+        {
+          "type": "uint256",
+          "name": "carbonStored"
+        },
+        {
+          "type": "uint256",
+          "name": "treesPlanted"
+        },
+        {
+          "type": "string",
+          "name": "status"
+        },
+        {
+          "type": "uint256",
+          "name": "submittedAt"
+        },
+        {
+          "type": "bool",
+          "name": "exists"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "submitPlanting",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": "_title"
+        },
+        {
+          "type": "string",
+          "name": "_description"
+        },
+        {
+          "type": "string",
+          "name": "_ecosystem"
+        },
+        {
+          "type": "string",
+          "name": "_location"
+        },
+        {
+          "type": "uint256",
+          "name": "_areaRestored"
+        },
+        {
+          "type": "uint256",
+          "name": "_carbonStored"
+        },
+        {
+          "type": "uint256",
+          "name": "_treesPlanted"
+        },
+        {
+          "type": "string[]",
+          "name": "_ipfsHashes"
+        },
+        {
+          "type": "string[]",
+          "name": "_latitudes"
+        },
+        {
+          "type": "string[]",
+          "name": "_longitudes"
+        },
+        {
+          "type": "uint256[]",
+          "name": "_timestamps"
+        }
+      ],
+      "outputs": []
+    }
+  ]
+}

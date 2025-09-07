@@ -12,4 +12,8 @@ npx hardhat node
 npx hardhat ignition deploy ./ignition/modules/Lock.js
 ```
 
-<!-- npx hardhat run --network sepolia scripts/deploy.js -->
+<!--
+npx hardhat run --network sepolia scripts/deploy.js
+npx hardhat compile
+
+-->
