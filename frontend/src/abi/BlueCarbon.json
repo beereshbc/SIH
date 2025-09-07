@@ -1,5 +1,5 @@
 {
-  "address": "0x197d2Fb7D31FCE332Eea4F71CA0C7b1CF86CbC4C",
+  "address": "0xccdd38e26676a73CDeD097eBc976B245B0b22117",
   "abi": [
     {
       "type": "constructor",
@@ -134,6 +134,41 @@
     },
     {
       "type": "function",
+      "name": "getImage",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_submissionId"
+        },
+        {
+          "type": "uint256",
+          "name": "_index"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "string",
+          "name": ""
+        },
+        {
+          "type": "string",
+          "name": ""
+        },
+        {
+          "type": "string",
+          "name": ""
+        },
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "getImagesCount",
       "constant": true,
       "stateMutability": "view",
@@ -233,6 +268,10 @@
         }
       ],
       "outputs": [
+        {
+          "type": "address",
+          "name": "ngoWallet"
+        },
         {
           "type": "string",
           "name": "title"

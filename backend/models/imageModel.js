@@ -1,8 +1,12 @@
 import mongoose from "mongoose";
 
 const imageSchema = new mongoose.Schema({
-  id: { type: Number, required: true },
-  dataUrl: { type: String, required: true }, // can replace with IPFS hash later
+  projectId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Project",
+    required: true,
+  }, // link to project
+  ipfsHash: { type: String, required: true }, // IPFS CID for JSON containing image + GPS
   lat: { type: Number, required: true },
   lng: { type: Number, required: true },
   timestamp: { type: Date, required: true },

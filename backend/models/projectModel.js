@@ -9,6 +9,11 @@ const projectSchema = new mongoose.Schema({
   treesPlanted: { type: Number, required: true },
   areaRestored: { type: Number, required: true },
   carbonStored: { type: Number, required: true },
+  ipfsImages: [
+    {
+      type: String, // stores the IPFS hash (CID) of each image JSON
+    },
+  ],
 });
 
 const projectModel = mongoose.model("Project", projectSchema);

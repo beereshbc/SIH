@@ -97,12 +97,21 @@ const getuserData = async (req, res) => {
 
 const submitProject = async (req, res) => {
   try {
-    const { ngoId, ngoName, ngoLocation, email, project, images } = req.body;
+    const {
+      ngoId,
+      ngoName,
+      ngoLocation,
+      email,
+      walletAddress,
+      project,
+      images,
+    } = req.body;
 
     // ✅ Validate required fields
     if (
       !ngoId ||
       !ngoName ||
+      !ngoLocation ||
       !email ||
       !project ||
       !project.projectId ||
@@ -111,11 +120,12 @@ const submitProject = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields including projectId or images",
+        message:
+          "Missing required fields including ngoLocation, projectId or images",
       });
     }
 
-    // 🔹 Prevent duplicate project submission for same NGO
+    // 🔹 Prevent duplicate projectId submission
     const existing = await ngoProjectModel.findOne({
       ngoId,
       "project.projectId": project.projectId,
@@ -123,48 +133,57 @@ const submitProject = async (req, res) => {
     if (existing) {
       return res.status(400).json({
         success: false,
-        message: "This NGO has already submitted this project",
+        message: "This NGO has already submitted this projectId",
       });
     }
 
-    // 1️⃣ Convert BigInt/string fields to Number
+    // 1️⃣ Convert numeric fields safely
     const safeProject = {
       ...project,
       treesPlanted: Number(project.treesPlanted) || 0,
       areaRestored: Number(project.areaRestored) || 0,
       carbonStored: Number(project.carbonStored) || 0,
+      ipfsImages: [], // initialize empty array
     };
 
     // 2️⃣ Save Project document
     const projectDoc = new projectModel(safeProject);
     const savedProject = await projectDoc.save();
 
-    // 3️⃣ Save Image documents
+    // 3️⃣ Save Image documents and attach projectId
     const savedImages = [];
+    const ipfsHashes = []; // collect IPFS hashes for project
     for (let img of images) {
       const imgDoc = new imageModel({
-        ...img,
-        lat: img.lat ? Number(img.lat) : 0,
-        lng: img.lng ? Number(img.lng) : 0,
+        projectId: savedProject._id, // ✅ Link image to project
+        ipfsHash: img.ipfsHash,
+        lat: Number(img.lat) || 0,
+        lng: Number(img.lng) || 0,
         timestamp: img.timestamp ? new Date(img.timestamp) : new Date(),
+        gpsError: img.gpsError || null,
       });
       const savedImg = await imgDoc.save();
       savedImages.push(savedImg);
+      ipfsHashes.push(img.ipfsHash); // store hash for project
     }
+
+    // 🔹 Update Project with IPFS images
+    savedProject.ipfsImages = ipfsHashes;
+    await savedProject.save();
 
     // 4️⃣ Save NGO Project linking project & images
     const ngoProjectDoc = new ngoProjectModel({
       ngoId,
       ngoName,
-      ngoLocation: ngoLocation || "Unknown",
+      ngoLocation,
       email,
+      walletAddress: walletAddress || null,
       project: savedProject._id,
       images: savedImages.map((img) => img._id),
     });
 
     const ngoProject = await ngoProjectDoc.save();
 
-    // ✅ Response
     res.status(201).json({
       success: true,
       message: "Project submitted successfully",
@@ -173,12 +192,10 @@ const submitProject = async (req, res) => {
   } catch (err) {
     console.error("Submit Project Error:", err);
 
-    // Handle duplicate key error gracefully
     if (err.code === 11000) {
       return res.status(400).json({
         success: false,
-        message:
-          "Duplicate submission detected. NGO already has a project with this ID.",
+        message: "Duplicate projectId detected. Each projectId must be unique.",
       });
     }
 

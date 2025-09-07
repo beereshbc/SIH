@@ -1,0 +1,9 @@
+import { PinataSDK } from "pinata";
+export const pinata = new PinataSDK({
+  pinataJwt:
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI5OWE0ZGMzNC1kYzJkLTQwYjAtOGFjYi1iZjZhMGVhZmFlYTgiLCJlbWFpbCI6ImJjYmVlcmVzaGt1bWFyQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJwaW5fcG9saWN5Ijp7InJlZ2lvbnMiOlt7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6IkZSQTEifSx7ImRlc2lyZWRSZXBsaWNhdGlvbkNvdW50IjoxLCJpZCI6Ik5ZQzEifV0sInZlcnNpb24iOjF9LCJtZmFfZW5hYmxlZCI6ZmFsc2UsInN0YXR1cyI6IkFDVElWRSJ9LCJhdXRoZW50aWNhdGlvblR5cGUiOiJzY29wZWRLZXkiLCJzY29wZWRLZXlLZXkiOiIyOWUyN2Y5NmZhM2M5ZWFhYTc5YSIsInNjb3BlZEtleVNlY3JldCI6IjdjYWI4NDBmNDNjMTYzMDFjNTUzZmU4ZjAyYjI2NDU3YjY3MTY0ZTY5MDJlMzU0NDI2ZGJlOTA0MmQ4OTc5YmYiLCJleHAiOjE3ODg3MDY2MDN9.wwvQu8VeO_nu_H_AxaI8TTXbGKTQ5csYXMlQEbd9Vgc" ||
+    process.env.PINATA_JWT,
+  pinataGateway:
+    "aquamarine-electrical-lamprey-369.mypinata.cloud" ||
+    process.env.PINATA_GATEWAY,
+});

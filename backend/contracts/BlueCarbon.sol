@@ -16,6 +16,7 @@ contract BlueCarbon {
     }
 
     struct PlantingSubmission {
+        address ngoWallet;     // Wallet of submitting NGO
         string title;          // Project title
         string description;    // Project description
         string ecosystem;      // Ecosystem type
@@ -23,7 +24,7 @@ contract BlueCarbon {
         uint256 areaRestored;  // Area restored in hectares
         uint256 carbonStored;  // CO2 stored in kg
         uint256 treesPlanted;  // Number of trees
-        Image[] images;        // Array of images (IPFS hashes)
+        Image[] images;        // Array of images (IPFS hashes + GPS)
         string status;         // "pending", "approved", "rejected"
         uint256 submittedAt;   // Timestamp of submission
         bool exists;           // Check if submission exists
@@ -89,6 +90,7 @@ contract BlueCarbon {
         submissionCount++;
         PlantingSubmission storage submission = submissions[submissionCount];
 
+        submission.ngoWallet = msg.sender;  // store NGO wallet
         submission.title = _title;
         submission.description = _description;
         submission.ecosystem = _ecosystem;
@@ -161,13 +163,16 @@ contract BlueCarbon {
         return submissions[_submissionId].images.length;
     }
 
+    /// @notice Get IPFS hash of an image for a submission
+    function getImage(uint256 _submissionId, uint256 _index) public view returns(string memory, string memory, string memory, uint256) {
+        Image storage img = submissions[_submissionId].images[_index];
+        return (img.ipfsHash, img.latitude, img.longitude, img.timestamp);
+    }
+
     // ------------------------------------
     // INTERNAL FUNCTIONS
     // ------------------------------------
     function _getSubmissionWallet(uint256 _submissionId) internal view returns(address) {
-        // Iterate ngoSubmissions mapping to find wallet (optimization: could store wallet in submission struct if needed)
-        for(uint i = 0; i < 10000; i++){ /* placeholder for safe iteration */ }
-        // For now, assume msg.sender is correct (frontend should pass correct wallet)
-        return msg.sender;
+        return submissions[_submissionId].ngoWallet;
     }
 }

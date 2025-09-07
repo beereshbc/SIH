@@ -322,7 +322,7 @@ export default function Registry() {
     return new File([u8arr], filename, { type: mime });
   }
 
-  // Upload to Pinata
+  // Upload images to Pinata
   async function uploadImagesToPinata(images) {
     const ipfsHashes = [];
     for (let i = 0; i < images.length; i++) {
@@ -331,10 +331,10 @@ export default function Registry() {
         const result = await pinata.upload.public.file(file, {
           name: `image_${i}.jpg`,
         });
-        ipfsHashes.push(result.cid); // v2 uses `cid` instead of `IpfsHash`
+        ipfsHashes.push(result.cid); // v2 uses `cid`
       } catch (err) {
         console.error("Pinata upload failed for image", i, err);
-        throw err; // optional: stop upload if any fails
+        throw err;
       }
     }
     return ipfsHashes;
@@ -363,18 +363,18 @@ export default function Registry() {
         setWalletAddress(wallet);
       }
 
-      // Upload images to Pinata (IPFS) and get hashes
+      // ✅ Upload images to Pinata
       const ipfsHashes = await uploadImagesToPinata(images);
 
-      // Build backend payload
+      // Build payload for backend
       const payload = {
-        ngoId: "ngo_" + (ngo.email || Date.now()), // unique ID fallback
+        ngoId: "ngo_" + (ngo.email || Date.now()),
         ngoName: ngo.name,
         ngoLocation: ngo.location,
         email: ngo.email,
         walletAddress: wallet,
         project: {
-          projectId: "proj_" + Date.now(), // <-- add this line
+          projectId: "proj_" + Date.now(),
           title: project.title,
           ecosystem: project.ecosystem,
           location: project.location,
@@ -385,15 +385,13 @@ export default function Registry() {
           submittedAt: new Date().toISOString(),
         },
         images: images.map((img, idx) => ({
-          id: idx,
-          dataUrl: img.dataUrl,
           ipfsHash: ipfsHashes[idx],
           lat: img.lat != null ? Number(img.lat) : 0,
           lng: img.lng != null ? Number(img.lng) : 0,
           timestamp: img.timestamp,
           gpsError: img.gpsError || null,
         })),
-        status: "pending", // default status
+        status: "pending",
       };
 
       // POST to backend
