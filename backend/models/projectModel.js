@@ -8,10 +8,10 @@ const projectSchema = new mongoose.Schema({
   ecosystem: { type: String, required: true },
   treesPlanted: { type: Number, required: true },
   areaRestored: { type: Number, required: true },
-  carbonStored: { type: Number, required: true },
+  carbonStored: { type: Number, required: true }, // still optional summary
   ipfsImages: [
     {
-      type: String, // stores the IPFS hash (CID) of each image JSON
+      type: String, // IPFS hashes of image JSONs
     },
   ],
 });

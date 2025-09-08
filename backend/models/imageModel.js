@@ -5,12 +5,32 @@ const imageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Project",
     required: true,
-  }, // link to project
-  ipfsHash: { type: String, required: true }, // IPFS CID for JSON containing image + GPS
+  },
+  ipfsHash: { type: String, required: true },
   lat: { type: Number, required: true },
   lng: { type: Number, required: true },
   timestamp: { type: Date, required: true },
+
+  // status of each image (not project-wide)
+  status: {
+    type: String,
+    enum: ["pending", "verified", "rejected"],
+    default: "pending",
+  },
+
+  // carbon credits allocated per image
+  carbonCredits: {
+    type: Number,
+    default: 0,
+  },
+
+  // store GPS errors if detected
+  gpsError: {
+    type: String,
+    default: null,
+  },
 });
 
-const imageModel = mongoose.model("Image", imageSchema);
-export default imageModel;
+const Image = mongoose.model("Image", imageSchema);
+
+export default Image;

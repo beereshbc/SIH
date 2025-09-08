@@ -107,7 +107,7 @@ const submitProject = async (req, res) => {
       images,
     } = req.body;
 
-    // ✅ Validate required fields
+    // 1️⃣ Validate required fields
     if (
       !ngoId ||
       !ngoName ||
@@ -125,7 +125,7 @@ const submitProject = async (req, res) => {
       });
     }
 
-    // 🔹 Prevent duplicate projectId submission
+    // 2️⃣ Prevent duplicate projectId for the same NGO
     const existing = await ngoProjectModel.findOne({
       ngoId,
       "project.projectId": project.projectId,
@@ -137,41 +137,42 @@ const submitProject = async (req, res) => {
       });
     }
 
-    // 1️⃣ Convert numeric fields safely
+    // 3️⃣ Normalize project numeric fields
     const safeProject = {
       ...project,
       treesPlanted: Number(project.treesPlanted) || 0,
       areaRestored: Number(project.areaRestored) || 0,
       carbonStored: Number(project.carbonStored) || 0,
-      ipfsImages: [], // initialize empty array
+      ipfsImages: [],
     };
 
-    // 2️⃣ Save Project document
+    // 4️⃣ Save Project document
     const projectDoc = new projectModel(safeProject);
     const savedProject = await projectDoc.save();
 
-    // 3️⃣ Save Image documents and attach projectId
+    // 5️⃣ Save Image documents (link to projectId)
     const savedImages = [];
-    const ipfsHashes = []; // collect IPFS hashes for project
+    const ipfsHashes = [];
     for (let img of images) {
       const imgDoc = new imageModel({
-        projectId: savedProject._id, // ✅ Link image to project
+        projectId: savedProject._id,
         ipfsHash: img.ipfsHash,
         lat: Number(img.lat) || 0,
         lng: Number(img.lng) || 0,
         timestamp: img.timestamp ? new Date(img.timestamp) : new Date(),
         gpsError: img.gpsError || null,
+        status: "pending", // default
       });
       const savedImg = await imgDoc.save();
       savedImages.push(savedImg);
-      ipfsHashes.push(img.ipfsHash); // store hash for project
+      ipfsHashes.push(img.ipfsHash);
     }
 
-    // 🔹 Update Project with IPFS images
+    // 6️⃣ Update Project with IPFS image hashes
     savedProject.ipfsImages = ipfsHashes;
     await savedProject.save();
 
-    // 4️⃣ Save NGO Project linking project & images
+    // 7️⃣ Save NGOProject linking NGO ↔ Project ↔ Images
     const ngoProjectDoc = new ngoProjectModel({
       ngoId,
       ngoName,
@@ -180,14 +181,27 @@ const submitProject = async (req, res) => {
       walletAddress: walletAddress || null,
       project: savedProject._id,
       images: savedImages.map((img) => img._id),
+      submittedAt: new Date(),
     });
 
     const ngoProject = await ngoProjectDoc.save();
 
+    // 8️⃣ 🔗 Link NGOProject to User
+    await userModel.findOneAndUpdate(
+      { email }, // find user by email
+      { $push: { projects: ngoProject._id } }, // add ngoProject ref
+      { new: true }
+    );
+
+    // 9️⃣ Response
     res.status(201).json({
       success: true,
       message: "Project submitted successfully",
-      data: ngoProject,
+      data: {
+        ngoProject,
+        project: savedProject,
+        images: savedImages,
+      },
     });
   } catch (err) {
     console.error("Submit Project Error:", err);
@@ -206,4 +220,36 @@ const submitProject = async (req, res) => {
   }
 };
 
-export { registerUser, loginUser, getuserData, submitProject };
+const getNgoDashboardData = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.json({ success: false, message: "NGO/User Not found" });
+    }
+
+    const user = await userModel
+      .findById(userId)
+      .select("-password")
+      .populate({
+        path: "projects",
+        populate: { path: "images" },
+      });
+
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    res.json({ success: true, dashboardData: user });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export {
+  registerUser,
+  loginUser,
+  getuserData,
+  submitProject,
+  getNgoDashboardData,
+};
