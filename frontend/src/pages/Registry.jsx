@@ -354,19 +354,20 @@ export default function Registry() {
         setMessage("Please capture or upload at least one image.");
         return;
       }
-
-      // Optional: connect wallet if you want blockchain submission
       let wallet = walletAddress;
       if (!wallet) {
-        const { address } = await connectWallet();
+        const walletData = await connectWallet();
+        if (!walletData) {
+          console.error("⚠️ Wallet connection failed or rejected");
+          return; // ⛔ Stop execution if no wallet connected
+        }
+        const { address } = walletData;
         wallet = address;
         setWalletAddress(wallet);
       }
 
-      // ✅ Upload images to Pinata
       const ipfsHashes = await uploadImagesToPinata(images);
 
-      // Build payload for backend
       const payload = {
         ngoId: "ngo_" + (ngo.email || Date.now()),
         ngoName: ngo.name,
@@ -382,28 +383,25 @@ export default function Registry() {
           areaRestored: Number(project.areaRestored || 0),
           carbonStored: Number(project.carbonStored || 0),
           description: project.description,
-          submittedAt: new Date().toISOString(),
         },
         images: images.map((img, idx) => ({
           ipfsHash: ipfsHashes[idx],
-          lat: img.lat != null ? Number(img.lat) : 0,
-          lng: img.lng != null ? Number(img.lng) : 0,
+          lat: img.lat ?? 0,
+          lng: img.lng ?? 0,
           timestamp: img.timestamp,
           gpsError: img.gpsError || null,
+          status: "pending", // 🔹 default for later verification
         })),
-        status: "pending",
+        submittedAt: new Date().toISOString(), // ✅ Corrected
       };
 
-      // POST to backend
       const response = await axios.post("/api/user/projects", payload);
 
       if (response.data.success) {
         setMessage("✅ Project submitted successfully!");
-        // Clear drafts
         localStorage.removeItem("registry_ngo");
         localStorage.removeItem("registry_project");
         localStorage.removeItem("registry_images");
-        // Reset state
         setStep(1);
         setNgo({ name: "", email: "", location: "" });
         setProject({
@@ -425,9 +423,9 @@ export default function Registry() {
     }
   };
 
-  if (message) {
-    toast.success(message);
-  }
+  // if (message) {
+  //   toast.success(message);
+  // }
 
   return (
     <div className="flex flex-col gap-y-14">
