@@ -5,8 +5,9 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    walletAddress: { type: String, required: true },
+    ngoLocation: { type: String, required: true }, // ✅ Added location field
 
-    // 🔗 Link to NGO Projects
     projects: [
       {
         type: mongoose.Schema.Types.ObjectId,

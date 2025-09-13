@@ -252,10 +252,23 @@ export default function Registry() {
   };
   const handleConnectWallet = async () => {
     try {
-      const { signer, address } = await connectWallet(); // your existing utility
+      const { signer, address } = await connectWallet(); // your existing wallet connect utility
       setWalletAddress(address);
-      setNgo({ ...ngo, walletAddress: address }); // store in NGO state
+
+      // Save user object locally so submission can work
+      const userObj = {
+        _id: address, // use wallet as unique user ID
+        name: ngo.name,
+        email: ngo.email,
+        walletAddress: address,
+      };
+      localStorage.setItem("user", JSON.stringify(userObj));
+
+      // Update NGO state as well
+      setNgo((prev) => ({ ...prev, walletAddress: address }));
+
       setMessage(`Wallet connected: ${address}`);
+      console.log("📌 User saved in localStorage:", userObj);
     } catch (err) {
       console.error("Wallet connection failed:", err);
       setMessage("Wallet connection failed: " + err.message);
@@ -328,13 +341,16 @@ export default function Registry() {
     for (let i = 0; i < images.length; i++) {
       const file = dataURLtoFile(images[i].dataUrl, `image_${i}.jpg`);
       try {
+        console.log("Uploading image", i);
         const result = await pinata.upload.public.file(file, {
           name: `image_${i}.jpg`,
         });
-        ipfsHashes.push(result.cid); // v2 uses `cid`
+        console.log("Uploaded image", i, result.cid);
+        ipfsHashes.push(result.cid);
       } catch (err) {
         console.error("Pinata upload failed for image", i, err);
-        throw err;
+        // Skip this image instead of throwing
+        ipfsHashes.push(null);
       }
     }
     return ipfsHashes;
@@ -342,66 +358,93 @@ export default function Registry() {
 
   const handleSubmitProject = async () => {
     try {
+      console.log("🚀 Submit clicked");
+
+      // 1️⃣ Validate NGO details
       if (!ngo.name || !ngo.email || !ngo.location) {
-        setMessage("Please fill all NGO details before submitting.");
+        setMessage("Please fill all NGO details");
         return;
       }
+
+      // 2️⃣ Validate Project details
       if (!project.title || !project.treesPlanted) {
-        setMessage("Please fill project title and trees planted.");
+        setMessage("Please fill project title and trees planted");
         return;
       }
+
+      // 3️⃣ Validate images
       if (images.length === 0) {
-        setMessage("Please capture or upload at least one image.");
+        setMessage("Capture or upload at least one image");
         return;
       }
-      let wallet = walletAddress;
-      if (!wallet) {
-        const walletData = await connectWallet();
-        if (!walletData) {
-          console.error("⚠️ Wallet connection failed or rejected");
-          return; // ⛔ Stop execution if no wallet connected
-        }
-        const { address } = walletData;
-        wallet = address;
-        setWalletAddress(wallet);
+
+      console.log("✅ Validation passed");
+
+      // 4️⃣ Upload images to Pinata
+      console.log("📤 Uploading images to Pinata...");
+      const ipfsHashes = await uploadImagesToPinata(images);
+      console.log("✅ Uploaded images IPFS hashes:", ipfsHashes);
+
+      // 5️⃣ Get logged-in user
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      if (!storedUser || !storedUser._id) {
+        setMessage("User not logged in properly");
+        console.error("Missing user _id");
+        return;
       }
 
-      const ipfsHashes = await uploadImagesToPinata(images);
-
+      // 6️⃣ Prepare payload
       const payload = {
-        ngoId: "ngo_" + (ngo.email || Date.now()),
-        ngoName: ngo.name,
-        ngoLocation: ngo.location,
-        email: ngo.email,
-        walletAddress: wallet,
-        project: {
+        ngoId: storedUser._id,
+        ngoName: ngo.name, // ✅ add ngoName
+        email: ngo.email, // ✅ add email
+        projectData: {
           projectId: "proj_" + Date.now(),
           title: project.title,
-          ecosystem: project.ecosystem,
+          description: project.description,
           location: project.location,
+          ecosystem: project.ecosystem,
           treesPlanted: Number(project.treesPlanted),
           areaRestored: Number(project.areaRestored || 0),
           carbonStored: Number(project.carbonStored || 0),
-          description: project.description,
+          ipfsImages: ipfsHashes,
+          ngoWallet: walletAddress || storedUser.walletAddress || "",
         },
         images: images.map((img, idx) => ({
           ipfsHash: ipfsHashes[idx],
           lat: img.lat ?? 0,
           lng: img.lng ?? 0,
-          timestamp: img.timestamp,
-          gpsError: img.gpsError || null,
-          status: "pending", // 🔹 default for later verification
+          timestamp: img.timestamp ? new Date(img.timestamp) : new Date(),
+          onChainIndex: idx,
         })),
-        submittedAt: new Date().toISOString(), // ✅ Corrected
       };
 
-      const response = await axios.post("/api/user/projects", payload);
+      console.log("📦 Payload ready for backend:", payload);
+      console.log("📤 Images Payload:", images);
 
+      // 7️⃣ Call backend
+      let response;
+      try {
+        response = await axios.post("/api/user/projects", payload, {
+          timeout: 20000,
+        });
+        console.log("📥 Backend response:", response.data);
+      } catch (err) {
+        console.error("⚠️ Backend POST failed:", err);
+        setMessage("❌ Backend submission failed: " + err.message);
+        return;
+      }
+
+      // 8️⃣ Handle backend response
       if (response.data.success) {
         setMessage("✅ Project submitted successfully!");
+        console.log("🎉 Project submission successful");
+
+        // Clear drafts and reset state
         localStorage.removeItem("registry_ngo");
         localStorage.removeItem("registry_project");
         localStorage.removeItem("registry_images");
+
         setStep(1);
         setNgo({ name: "", email: "", location: "" });
         setProject({
@@ -415,11 +458,14 @@ export default function Registry() {
         });
         setImages([]);
       } else {
-        setMessage("❌ Submission failed: " + response.data.message);
+        setMessage("❌ Backend submission failed: " + response.data.message);
+        console.error("Backend returned failure:", response.data);
       }
     } catch (err) {
-      console.error(err);
-      setMessage("❌ Submission error: " + err.message);
+      console.error("🔥 Submission Error:", err);
+      setMessage(
+        "❌ Submission error: " + (err.response?.data?.message || err.message)
+      );
     }
   };
 
@@ -486,7 +532,7 @@ export default function Registry() {
                   placeholder="email@example.org"
                 />
               </div>
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-sm">
                   Location (district/state)
                 </label>
@@ -497,8 +543,22 @@ export default function Registry() {
                   placeholder="Kochi, Kerala"
                 />
               </div>
+              <div>
+                <label className="block text-sm">Wallet Address</label>
+                <input
+                  className="border rounded p-2 w-full bg-gray-100"
+                  value={walletAddress || ""}
+                  readOnly
+                  placeholder="Connect wallet"
+                />
+                <button
+                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded"
+                  onClick={handleConnectWallet}
+                >
+                  {walletAddress ? "Reconnect Wallet" : "Connect Wallet"}
+                </button>
+              </div>
             </div>
-
             <div className="flex gap-2">
               <button
                 className="px-4 py-2 bg-gray-200 rounded"

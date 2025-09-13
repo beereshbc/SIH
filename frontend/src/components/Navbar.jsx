@@ -1,74 +1,83 @@
 import React, { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { motion, useAnimation } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Leaf, Users, LayoutDashboard, Home } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const controls = useAnimation();
-  const { token } = useAppContext(); // ✅ read token from context
+  const { token } = useAppContext();
 
   // Scroll animation
   const handleScroll = () => {
+    // Always visible if page content is smaller than window
+    if (document.body.scrollHeight <= window.innerHeight) {
+      controls.start({ opacity: 1, y: 0 });
+      return;
+    }
+
+    // Fade in/out on scroll for larger pages
     if (window.scrollY > window.innerHeight / 4) {
       controls.start({ opacity: 1, y: 0 });
     } else {
-      if (document.body.scrollHeight > window.innerHeight + 50) {
-        controls.start({ opacity: 0, y: -50 });
-      } else {
-        controls.start({ opacity: 1, y: 0 });
-      }
+      controls.start({ opacity: 0, y: -50 });
     }
   };
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll);
-    handleScroll();
+    handleScroll(); // initial check
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Links based on auth
+  // Auth-based links
   const navLinks = token
     ? [
-        { name: "Home", path: "/" },
-        { name: "Registry", path: "/registry" },
-        { name: "Dashboard", path: "/dashboard" },
-        { name: "Community", path: "/community" },
+        { name: "Home", path: "/", icon: <Home size={18} /> },
+        { name: "Registry", path: "/registry", icon: <Leaf size={18} /> },
+        {
+          name: "Dashboard",
+          path: "/dashboard",
+          icon: <LayoutDashboard size={18} />,
+        },
+        { name: "Community", path: "/community", icon: <Users size={18} /> },
       ]
     : [
-        { name: "Home", path: "/" },
-        { name: "Sign In", path: "/login" },
+        { name: "Home", path: "/", icon: <Home size={18} /> },
+        { name: "Sign In", path: "/login", icon: <Users size={18} /> },
       ];
 
   return (
     <motion.nav
       animate={controls}
       initial={{ opacity: 0, y: -50 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
       className="fixed top-0 left-0 w-full z-50"
     >
-      <div className="max-w-6xl mx-4 md:mx-auto flex items-center justify-between px-6 py-3 rounded-2xl shadow-lg mt-4 border border-gray-600 bg-[#004D40]/90 text-white backdrop-blur-md">
+      {/* Navbar Container */}
+      <div className="max-w-6xl mx-4 md:mx-auto flex items-center justify-between px-6 py-3 mt-4 border border-white rounded-xl bg-[#002b25]/80 text-white backdrop-blur-md">
         {/* Logo */}
-        <div className="italic font-extrabold text-xl md:text-2xl tracking-wide playfont cursor-pointer">
+        <div className="italic font-extrabold text-xl md:text-2xl tracking-wide cursor-pointer">
           BlueGreen
         </div>
 
         {/* Desktop Links */}
-        <ul className="hidden md:flex gap-8 font-medium">
+        <ul className="hidden md:flex gap-8 font-medium items-center">
           {navLinks.map((link, i) => (
-            <li key={i}>
+            <li key={i} className="flex items-center gap-2">
               <NavLink
                 to={link.path}
                 end
                 className={({ isActive }) =>
-                  `relative px-1 transition duration-300 ${
+                  `relative flex items-center gap-2 px-2 transition duration-300 ${
                     isActive
-                      ? "font-semibold after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-full after:h-[3px] after:rounded-full after:bg-green-300 after:shadow-[0_0_12px_rgba(123,239,178,0.8)]"
+                      ? "font-semibold text-green-300 border-b-2 border-green-300"
                       : "hover:text-green-300"
                   }`
                 }
               >
+                {link.icon}
                 {link.name}
               </NavLink>
             </li>
@@ -92,7 +101,7 @@ const Navbar = () => {
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="md:hidden bg-[#004D40]/95 backdrop-blur-xl rounded-xl mx-4 mt-2 p-5 shadow-xl absolute left-0 right-0 z-40"
+          className="md:hidden bg-[#002b25]/95 backdrop-blur-xl rounded-xl mx-4 mt-2 p-5 border border-white"
         >
           <ul className="flex flex-col gap-4 font-medium text-white">
             {navLinks.map((link, i) => (
@@ -102,13 +111,14 @@ const Navbar = () => {
                   end
                   onClick={() => setMenuOpen(false)}
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-lg transition-colors ${
+                    `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                       isActive
                         ? "bg-green-600/30 text-green-200 font-semibold"
                         : "hover:text-green-300"
                     }`
                   }
                 >
+                  {link.icon}
                   {link.name}
                 </NavLink>
               </li>

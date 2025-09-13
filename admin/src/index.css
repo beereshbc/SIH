@@ -21,3 +21,7 @@ body {
   overflow-x: hidden;
   /* hides horizontal scroll */
 }
+
+::-webkit-scrollbar {
+  display: none;
+}

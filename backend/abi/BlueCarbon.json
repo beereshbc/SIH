@@ -1,11 +1,122 @@
 {
-  "address": "0xf5E0ab061835352303399a6C7494B6680cA52772",
+  "address": "0xb6508628A9Ec8d9384a9CEb9eC0A9BD150aAdF85",
   "abi": [
     {
       "type": "constructor",
       "stateMutability": "undefined",
       "payable": false,
       "inputs": []
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "ImageApproved",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "submissionId",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "imageIndex",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "ngoWallet",
+          "indexed": true
+        },
+        {
+          "type": "string",
+          "name": "ipfsHash",
+          "indexed": false
+        },
+        {
+          "type": "string",
+          "name": "latitude",
+          "indexed": false
+        },
+        {
+          "type": "string",
+          "name": "longitude",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "credits",
+          "indexed": false
+        },
+        {
+          "type": "address",
+          "name": "admin",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "timestamp",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "ImageRejected",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "submissionId",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "imageIndex",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "ngoWallet",
+          "indexed": true
+        },
+        {
+          "type": "string",
+          "name": "ipfsHash",
+          "indexed": false
+        },
+        {
+          "type": "string",
+          "name": "reason",
+          "indexed": false
+        },
+        {
+          "type": "address",
+          "name": "admin",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "timestamp",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "ProjectSubmitted",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "submissionId",
+          "indexed": false
+        },
+        {
+          "type": "string",
+          "name": "ngoEmail",
+          "indexed": false
+        }
+      ]
     },
     {
       "type": "event",
@@ -37,12 +148,12 @@
         {
           "type": "uint256",
           "name": "submissionId",
-          "indexed": false
+          "indexed": true
         },
         {
           "type": "address",
           "name": "ngoWallet",
-          "indexed": false
+          "indexed": true
         }
       ]
     },
@@ -79,7 +190,7 @@
     },
     {
       "type": "function",
-      "name": "approveSubmission",
+      "name": "approveImage",
       "constant": false,
       "payable": false,
       "inputs": [
@@ -89,10 +200,65 @@
         },
         {
           "type": "uint256",
+          "name": "_imageIndex"
+        },
+        {
+          "type": "uint256",
           "name": "_credits"
         }
       ],
       "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "approveSubmission",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_submissionId"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "approvedImageKey",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "bytes32",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "approvedIpfsHash",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": ""
+        }
+      ]
     },
     {
       "type": "function",
@@ -129,6 +295,61 @@
         {
           "type": "uint256",
           "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getImage",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_submissionId"
+        },
+        {
+          "type": "uint256",
+          "name": "_index"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "string",
+          "name": "ipfsHash"
+        },
+        {
+          "type": "string",
+          "name": "latitude"
+        },
+        {
+          "type": "string",
+          "name": "longitude"
+        },
+        {
+          "type": "uint256",
+          "name": "timestamp"
+        },
+        {
+          "type": "string",
+          "name": "status"
+        },
+        {
+          "type": "string",
+          "name": "reason"
+        },
+        {
+          "type": "uint256",
+          "name": "credits"
+        },
+        {
+          "type": "address",
+          "name": "approvedBy"
+        },
+        {
+          "type": "uint256",
+          "name": "approvedAt"
         }
       ]
     },
@@ -195,6 +416,27 @@
     },
     {
       "type": "function",
+      "name": "rejectImage",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_submissionId"
+        },
+        {
+          "type": "uint256",
+          "name": "_imageIndex"
+        },
+        {
+          "type": "string",
+          "name": "_reason"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
       "name": "rejectSubmission",
       "constant": false,
       "payable": false,
@@ -233,6 +475,18 @@
         }
       ],
       "outputs": [
+        {
+          "type": "address",
+          "name": "ngoWallet"
+        },
+        {
+          "type": "string",
+          "name": "ngoName"
+        },
+        {
+          "type": "string",
+          "name": "ngoEmail"
+        },
         {
           "type": "string",
           "name": "title"
@@ -283,6 +537,14 @@
       "inputs": [
         {
           "type": "string",
+          "name": "_ngoName"
+        },
+        {
+          "type": "string",
+          "name": "_ngoEmail"
+        },
+        {
+          "type": "string",
           "name": "_title"
         },
         {
@@ -324,6 +586,39 @@
         {
           "type": "uint256[]",
           "name": "_timestamps"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "submitProject",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": "ngoName"
+        },
+        {
+          "type": "string",
+          "name": "ngoEmail"
+        },
+        {
+          "type": "string",
+          "name": "title"
+        },
+        {
+          "type": "string[]",
+          "name": "ipfsHashes"
+        },
+        {
+          "type": "string[]",
+          "name": "latitudes"
+        },
+        {
+          "type": "string[]",
+          "name": "longitudes"
         }
       ],
       "outputs": []

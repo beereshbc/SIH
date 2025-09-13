@@ -1,248 +1,311 @@
+// controllers/userController.js
 import validator from "validator";
 import bcrypt from "bcrypt";
-import userModel from "../models/userModel.js";
 import jwt from "jsonwebtoken";
+import userModel from "../models/userModel.js";
 import ngoProjectModel from "../models/ngoProjectModel.js";
 import projectModel from "../models/projectModel.js";
 import imageModel from "../models/imageModel.js";
+import { blueCarbonContract } from "../config/blockchain.js";
+import SubmissionModel from "../models/submissionModel.js";
 
+// Register User
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, walletAddress, ngoLocation } = req.body;
 
-    //check details are enterd or not
-    if (!name || !password || !email) {
-      return res.json({ success: false, message: "Missing Details" });
+    if (!name || !email || !password || !walletAddress || !ngoLocation) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing Details" });
     }
 
-    //validating email id
     if (!validator.isEmail(email)) {
-      return res.json({ success: false, message: "Enter Valid Email" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Enter Valid Email" });
     }
+
     const isEmailExist = await userModel.findOne({ email });
     if (isEmailExist) {
-      return res.json({
+      return res.status(400).json({
         success: false,
-        message: "Email is Already existed please Login",
+        message: "Email already exists. Please login.",
       });
     }
 
-    // validating strong password
     if (password.length < 8) {
-      return res.json({ success: false, message: "Enter A Strong Password" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Enter a strong password" });
     }
 
-    //hashing the user password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const userData = {
+    const newUser = await userModel.create({
       name,
       email,
       password: hashedPassword,
-    };
+      walletAddress,
+      ngoLocation,
+    });
 
-    const newUser = new userModel(userData);
-    const user = await newUser.save();
+    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
     res.json({ success: true, token });
   } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// API for user login
-
+// Login User
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await userModel.findOne({ email });
 
-    if (!user) {
-      return res.json({
+    const user = await userModel.findOne({ email });
+    if (!user)
+      return res.status(404).json({
         success: false,
-        message: "User does not Exist kindly register",
+        message: "User does not exist. Kindly register",
       });
-    }
 
     const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid Credentials" });
 
-    if (isMatch) {
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
-      res.json({ success: true, token });
-    } else {
-      res.json({ success: false, message: "Invalid Credentials" });
-    }
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    res.json({ success: true, token });
   } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// API to get user profile data
-
+// Get User Profile
 const getuserData = async (req, res) => {
   try {
     const { userId } = req.body;
     const userData = await userModel.findById(userId).select("-password");
 
+    if (!userData)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+
     res.json({ success: true, userData });
   } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
+// Submit Project
 const submitProject = async (req, res) => {
   try {
-    const {
-      ngoId,
-      ngoName,
-      ngoLocation,
-      email,
-      walletAddress,
-      project,
-      images,
-    } = req.body;
+    const { ngoId, ngoName, email, projectData, images } = req.body;
 
-    // 1️⃣ Validate required fields
     if (
       !ngoId ||
       !ngoName ||
-      !ngoLocation ||
       !email ||
-      !project ||
-      !project.projectId ||
+      !projectData ||
       !images ||
-      !images.length
+      images.length === 0
     ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Missing required fields including ngoLocation, projectId or images",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Incomplete submission data" });
     }
 
-    // 2️⃣ Prevent duplicate projectId for the same NGO
-    const existing = await ngoProjectModel.findOne({
-      ngoId,
-      "project.projectId": project.projectId,
+    // 1️⃣ Save Project
+    let projectDoc = await projectModel.findOne({
+      projectId: projectData.projectId,
     });
-    if (existing) {
-      return res.status(400).json({
-        success: false,
-        message: "This NGO has already submitted this projectId",
+    if (!projectDoc) {
+      projectDoc = await projectModel.create({
+        projectId: projectData.projectId,
+        title: projectData.title,
+        description: projectData.description,
+        location: projectData.location,
+        ecosystem: projectData.ecosystem,
+        treesPlanted: projectData.treesPlanted,
+        areaRestored: projectData.areaRestored,
+        carbonStored: projectData.carbonStored,
+        ipfsImages: projectData.ipfsImages,
       });
     }
 
-    // 3️⃣ Normalize project numeric fields
-    const safeProject = {
-      ...project,
-      treesPlanted: Number(project.treesPlanted) || 0,
-      areaRestored: Number(project.areaRestored) || 0,
-      carbonStored: Number(project.carbonStored) || 0,
-      ipfsImages: [],
-    };
-
-    // 4️⃣ Save Project document
-    const projectDoc = new projectModel(safeProject);
-    const savedProject = await projectDoc.save();
-
-    // 5️⃣ Save Image documents (link to projectId)
-    const savedImages = [];
-    const ipfsHashes = [];
-    for (let img of images) {
-      const imgDoc = new imageModel({
-        projectId: savedProject._id,
+    // 2️⃣ Save Images
+    const imageDocs = [];
+    for (const img of images) {
+      const imageDoc = await imageModel.create({
+        projectId: projectDoc._id,
         ipfsHash: img.ipfsHash,
-        lat: Number(img.lat) || 0,
-        lng: Number(img.lng) || 0,
-        timestamp: img.timestamp ? new Date(img.timestamp) : new Date(),
-        gpsError: img.gpsError || null,
-        status: "pending", // default
+        lat: img.lat,
+        lng: img.lng,
+        timestamp: img.timestamp,
+        onChainIndex: img.onChainIndex,
       });
-      const savedImg = await imgDoc.save();
-      savedImages.push(savedImg);
-      ipfsHashes.push(img.ipfsHash);
+      imageDocs.push(imageDoc._id);
     }
 
-    // 6️⃣ Update Project with IPFS image hashes
-    savedProject.ipfsImages = ipfsHashes;
-    await savedProject.save();
-
-    // 7️⃣ Save NGOProject linking NGO ↔ Project ↔ Images
-    const ngoProjectDoc = new ngoProjectModel({
+    // 3️⃣ Save NgoProject
+    const ngoProject = await ngoProjectModel.create({
       ngoId,
       ngoName,
-      ngoLocation,
       email,
-      walletAddress: walletAddress || null,
-      project: savedProject._id,
-      images: savedImages.map((img) => img._id),
-      submittedAt: new Date(),
+      ngoLocation: projectData.location,
+      ngoWallet: projectData.ngoWallet,
+      project: projectDoc._id,
+      images: imageDocs,
     });
 
-    const ngoProject = await ngoProjectDoc.save();
+    // ✅ Update user's projects array
+    const user = await userModel.findOne({ email: email }); // ngoId = wallet from frontend
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    user.projects.push(ngoProject._id);
+    await user.save();
 
-    // 8️⃣ 🔗 Link NGOProject to User
-    await userModel.findOneAndUpdate(
-      { email }, // find user by email
-      { $push: { projects: ngoProject._id } }, // add ngoProject ref
-      { new: true }
+    // 4️⃣ Push to blockchain
+    const ipfsHashes = images.map((i) => i.ipfsHash);
+    const latitudes = images.map((i) => String(i.lat ?? 0));
+    const longitudes = images.map((i) => String(i.lng ?? 0));
+
+    const tx = await blueCarbonContract.submitProject(
+      ngoProject.ngoName,
+      ngoProject.email,
+      projectData.title,
+      ipfsHashes,
+      latitudes,
+      longitudes
     );
+    const receipt = await tx.wait();
 
-    // 9️⃣ Response
-    res.status(201).json({
-      success: true,
-      message: "Project submitted successfully",
-      data: {
-        ngoProject,
-        project: savedProject,
-        images: savedImages,
-      },
-    });
-  } catch (err) {
-    console.error("Submit Project Error:", err);
+    // 5️⃣ Capture submissionId from blockchain event
+    const event = receipt.logs
+      .map((log) => {
+        try {
+          return blueCarbonContract.interface.parseLog(log);
+        } catch {
+          return null;
+        }
+      })
+      .find((e) => e && e.name === "ProjectSubmitted");
 
-    if (err.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: "Duplicate projectId detected. Each projectId must be unique.",
+    if (event) {
+      ngoProject.submissionIdOnChain = Number(event.args.submissionId);
+      await ngoProject.save();
+
+      // 6️⃣ Save submission in SubmissionModel
+      await SubmissionModel.create({
+        submissionIdOnChain: ngoProject.submissionIdOnChain,
+        ngoId: ngoProject.ngoId,
+        ngoName: ngoProject.ngoName,
+        ngoWallet: ngoProject.ngoWallet,
+        projectRef: projectDoc._id,
+        title: projectData.title,
+        description: projectData.description,
+        images: imageDocs,
       });
     }
 
-    res.status(500).json({
-      success: false,
-      message: "Internal Server Error: " + err.message,
+    return res.status(201).json({
+      success: true,
+      message: "Project submitted successfully",
+      submissionIdOnChain: ngoProject.submissionIdOnChain,
+      txHash: tx.hash,
     });
+  } catch (error) {
+    console.error("submitProject error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
+// Dashboard
 const getNgoDashboardData = async (req, res) => {
   try {
-    const { userId } = req.body;
+    // ✅ extract NGO userId from body (set by userAuth)
+    const userId = req.body.userId; // <-- FIXED LINE
 
     if (!userId) {
-      return res.json({ success: false, message: "NGO/User Not found" });
+      return res
+        .status(400)
+        .json({ success: false, message: "User ID missing" });
     }
 
+    // ✅ Find user and populate projects → project + images
     const user = await userModel
       .findById(userId)
       .select("-password")
       .populate({
         path: "projects",
-        populate: { path: "images" },
+        populate: [
+          { path: "project" }, // linked project details
+          { path: "images" }, // linked images
+        ],
       });
 
     if (!user) {
-      return res.json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
-    res.json({ success: true, dashboardData: user });
+    const projects = user.projects || [];
+    let totalCredits = 0;
+    let verified = 0;
+    let rejected = 0;
+    let pending = 0;
+
+    projects.forEach((proj) => {
+      proj.images.forEach((img) => {
+        if (img.status === "verified") {
+          verified++;
+          totalCredits += img.carbonCredits || 0;
+        } else if (img.status === "rejected") {
+          rejected++;
+        } else {
+          pending++;
+        }
+      });
+    });
+
+    const stats = {
+      totalProjects: projects.length,
+      totalImages: verified + rejected + pending,
+      verified,
+      rejected,
+      pending,
+      totalCredits,
+    };
+
+    return res.json({
+      success: true,
+      dashboardData: {
+        ngoId: user._id,
+        ngoName: user.name,
+        ngoWallet: user.walletAddress,
+        ngoLocation: user.location,
+        email: user.email,
+        projects,
+        stats,
+      },
+    });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    console.error("Dashboard error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

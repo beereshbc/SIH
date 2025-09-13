@@ -1,31 +1,36 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
-import Sidebar from "./components/Sidebar";
-import Navbar from "./components/Navbar";
-import Dashboard from "./pages/Dashboard";
-import Users from "./pages/Users";
-import Verification from "./pages/Verification";
-import CarbonCredits from "./pages/CarbonCredits";
-import Reports from "./pages/Reports";
-import Blockchain from "./pages/Blockchain";
-import Settings from "./pages/Settings";
+import { Route, Routes, Navigate } from "react-router-dom";
+import Login from "./pages/Login";
+import { useAppContext } from "./context/AppContext";
+import AdminLayout from "./layout/AdminLayout";
 
-export default function App() {
+import Dashboard from "./pages/Dashboard";
+import Verification from "./pages/Verification";
+import Users from "./pages/Users";
+import Credits from "./pages/Credits";
+import Transactions from "./pages/Transactions";
+import toast, { Toaster } from "react-hot-toast";
+
+const App = () => {
+  const { atoken } = useAppContext();
+
+  if (!atoken) return <Login />; // Redirect to login if no token
+
   return (
-    <div className="flex bg-gray-50 min-h-screen text-[13px]">
-      <Sidebar onLogout={() => (window.location.href = "/login")} />
-      <div className="flex-1 flex flex-col">
-        <Navbar />
+    <>
+      <Toaster />
+      <AdminLayout>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/users" element={<Users />} />
+          <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/verification" element={<Verification />} />
-          <Route path="/credits" element={<CarbonCredits />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/blockchain" element={<Blockchain />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/users" element={<Users />} />
+          <Route path="/credits" element={<Credits />} />
+          <Route path="/transactions" element={<Transactions />} />
         </Routes>
-      </div>
-    </div>
+      </AdminLayout>
+    </>
   );
-}
+};
+
+export default App;

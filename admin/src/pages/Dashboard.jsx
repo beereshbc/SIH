@@ -1,118 +1,63 @@
 import React, { useEffect, useState } from "react";
-import {
-  Menu,
-  CheckCircle,
-  Clock,
-  Zap,
-  ArrowRightCircle,
-  Download,
-} from "lucide-react";
-import { Link } from "react-router-dom";
-import StatsCard from "../components/StatsCard";
-import { mock } from "../api/mock";
+import { useAppContext } from "../context/AppContext";
 
 export default function Dashboard() {
+  const { axios, aToken } = useAppContext();
   const [stats, setStats] = useState({
-    totalTrees: 0,
-    verified: 0,
-    pending: 0,
-    issuedCredits: 0,
+    verifiedCount: 0,
+    pendingCount: 0,
+    rejectedCount: 0,
+    creditsIssued: 0,
   });
-  const [preview, setPreview] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    (async () => {
-      setStats(await mock.stats());
-      setPreview((await mock.pendingProofs()).slice(0, 4));
-    })();
-  }, []);
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const res = await axios.get("/api/admin/dashboard", {
+          headers: {
+            Authorization: `Bearer ${aToken}`, // 🔑 Ensure token is sent
+          },
+        });
+
+        setStats(res.data);
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+        setError(err.response?.data?.error || err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (aToken) fetchStats();
+  }, [aToken, axios]);
+
+  if (loading) return <p>Loading dashboard...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
-    <div className="p-4 min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="text-sm font-semibold">Dashboard</div>
-            <div className="text-[12px] text-gray-500">
-              Overview of planted trees, verifications & credits
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              to="/verification"
-              className="py-2 px-3 border rounded text-[12px] flex items-center gap-2"
-            >
-              <ArrowRightCircle className="w-4 h-4" /> View pending
-            </Link>
-            <button className="py-2 px-3 border rounded text-[12px] flex items-center gap-2">
-              <Download className="w-4 h-4" /> Export
-            </button>
-          </div>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white p-4 shadow rounded-lg">
+          <p className="text-gray-500">Verified Images</p>
+          <p className="text-xl font-bold">{stats.verifiedCount}</p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 text-[12px]">
-          <StatsCard
-            title="Total Trees"
-            value={stats.totalTrees}
-            icon={<Menu className="w-4 h-4" />}
-          />
-          <StatsCard
-            title="Verified"
-            value={stats.verified}
-            icon={<CheckCircle className="w-4 h-4" />}
-          />
-          <StatsCard
-            title="Pending"
-            value={stats.pending}
-            icon={<Clock className="w-4 h-4" />}
-          />
-          <StatsCard
-            title="Issued Credits"
-            value={stats.issuedCredits}
-            icon={<Zap className="w-4 h-4" />}
-          />
+        <div className="bg-white p-4 shadow rounded-lg">
+          <p className="text-gray-500">Pending Images</p>
+          <p className="text-xl font-bold">{stats.pendingCount}</p>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          <div className="col-span-2 border rounded p-3 text-[12px]">
-            <div className="font-semibold mb-2">Trees Planted (recent)</div>
-            <div className="text-[12px] text-gray-500">
-              Chart placeholder — integrate Chart.js / Recharts
-            </div>
-            <div className="mt-3">
-              <div className="grid grid-cols-2 gap-2">
-                {preview.map((p) => (
-                  <div key={p.id} className="border rounded p-2 text-[12px]">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-semibold">{p.species}</div>
-                        <div className="text-[11px] text-gray-500">
-                          {p.user}
-                        </div>
-                      </div>
-                      <div className="text-[11px]">
-                        {p.estimatedCarbonKg} kg
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="border rounded p-3 text-[12px]">
-            <div className="font-semibold mb-2">Quick Actions</div>
-            <div className="flex flex-col gap-2">
-              <Link
-                to="/verification"
-                className="py-2 px-3 text-[12px] border rounded flex items-center gap-2"
-              >
-                View pending verifications
-              </Link>
-              <button className="py-2 px-3 text-[12px] border rounded flex items-center gap-2">
-                Export report
-              </button>
-            </div>
-          </div>
+        <div className="bg-white p-4 shadow rounded-lg">
+          <p className="text-gray-500">Rejected Images</p>
+          <p className="text-xl font-bold">{stats.rejectedCount}</p>
+        </div>
+        <div className="bg-white p-4 shadow rounded-lg">
+          <p className="text-gray-500">Total Carbon Credits</p>
+          <p className="text-xl font-bold">{stats.creditsIssued}</p>
         </div>
       </div>
     </div>

@@ -1,23 +1,37 @@
+// middlewares/adminAuth.js
 import jwt from "jsonwebtoken";
-
-//admin authentication middleware
 
 const adminAuth = async (req, res, next) => {
   try {
     const { atoken } = req.headers;
     if (!atoken) {
-      return res.json({
+      return res.status(401).json({
         success: false,
-        message: "Not Authorized. Login Again ",
+        message: "Not Authorized. Login Again",
       });
     }
-    const token_decode = jwt.verify(atoken, process.env.JWT_SECRET);
-    req.body.userId = token_decode.id;
+
+    // Verify token
+    const decoded = jwt.verify(atoken, process.env.JWT_SECRET);
+
+    // Extra safety: check if it's really an admin token
+    if (!decoded || decoded.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Admin access required",
+      });
+    }
+
+    // Attach to request
+    req.adminId = decoded.id;
+    req.adminRole = decoded.role;
 
     next();
   } catch (error) {
-    console.log(error);
-    return res.json({ success: false, message: error.message });
+    console.error("AdminAuth error:", error.message);
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid or expired token" });
   }
 };
 
