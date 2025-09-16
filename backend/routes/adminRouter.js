@@ -17,6 +17,7 @@ import {
   getAllCreditsData,
   addAdmin,
   getAllAdmins,
+  getAdmin,
 } from "../controllers/adminController.js";
 import adminAuth from "../middlewares/adminAuth.js";
 
@@ -39,6 +40,7 @@ adminRouter.get("/users", adminAuth, getAllUsers);
 adminRouter.get("/credits", adminAuth, getAllCreditsData);
 adminRouter.post("/add-admin", adminAuth, addAdmin);
 adminRouter.get("/admins", adminAuth, getAllAdmins);
+adminRouter.get("/admin", adminAuth, getAdmin);
 // ✅ Bulk approve NGO project (off-chain → on-chain)
 adminRouter.post(
   "/projects/approve-onchain",

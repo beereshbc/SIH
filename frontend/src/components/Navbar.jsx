@@ -24,24 +24,25 @@ const Navbar = () => {
   const controls = useAnimation();
   const { token, axios } = useAppContext();
 
-  // Scroll animation
-  const handleScroll = () => {
-    if (document.body.scrollHeight <= window.innerHeight) {
-      controls.start({ opacity: 1, y: 0 });
-      return;
-    }
-    if (window.scrollY > 100) {
-      controls.start({ opacity: 1, y: 0 });
-    } else {
-      controls.start({ opacity: 0, y: -50 });
-    }
-  };
-
+  // ✅ Scroll animation inside useEffect
   useEffect(() => {
+    const handleScroll = () => {
+      if (document.body.scrollHeight <= window.innerHeight) {
+        controls.start({ opacity: 1, y: 0 });
+        return;
+      }
+      if (window.scrollY > 100) {
+        controls.start({ opacity: 1, y: 0 });
+      } else {
+        controls.start({ opacity: 0, y: -50 });
+      }
+    };
+
     window.addEventListener("scroll", handleScroll);
-    handleScroll();
+    handleScroll(); // initial check on mount
+
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [controls]);
 
   // Fetch user profile if logged in
   useEffect(() => {
@@ -51,9 +52,7 @@ const Navbar = () => {
         const res = await axios.get("/api/user/profile", {
           headers: { token },
         });
-        if (res.data.success) {
-          setUser(res.data.user);
-        }
+        if (res.data.success) setUser(res.data.user);
       } catch (err) {
         console.error("❌ Error fetching profile:", err);
       }
@@ -71,9 +70,7 @@ const Navbar = () => {
     if (profileOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [profileOpen]);
 
   // Auth-based links
@@ -132,7 +129,6 @@ const Navbar = () => {
               >
                 {link.icon}
                 {link.name}
-                {/* Glow underline effect */}
                 <span
                   className="absolute bottom-[-6px] left-0 w-0 h-[2px] bg-emerald-400 
                   transition-all duration-300 group-hover:w-full"

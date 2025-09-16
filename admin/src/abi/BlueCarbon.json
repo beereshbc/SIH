@@ -1,5 +1,5 @@
 {
-  "address": "0x5191939A283FCb28C47a187660820A7178002164",
+  "address": "0xfbD87f168959ca668f8C84bbf05129234C2446EA",
   "abi": [
     {
       "type": "constructor",
@@ -199,6 +199,100 @@
       ]
     },
     {
+      "type": "event",
+      "anonymous": false,
+      "name": "VideoApproved",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "submissionId",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "videoIndex",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "ngoWallet",
+          "indexed": true
+        },
+        {
+          "type": "string",
+          "name": "ipfsHash",
+          "indexed": false
+        },
+        {
+          "type": "string",
+          "name": "latitude",
+          "indexed": false
+        },
+        {
+          "type": "string",
+          "name": "longitude",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "credits",
+          "indexed": false
+        },
+        {
+          "type": "address",
+          "name": "admin",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "timestamp",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "VideoRejected",
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "submissionId",
+          "indexed": true
+        },
+        {
+          "type": "uint256",
+          "name": "videoIndex",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "ngoWallet",
+          "indexed": true
+        },
+        {
+          "type": "string",
+          "name": "ipfsHash",
+          "indexed": false
+        },
+        {
+          "type": "string",
+          "name": "reason",
+          "indexed": false
+        },
+        {
+          "type": "address",
+          "name": "admin",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "timestamp",
+          "indexed": false
+        }
+      ]
+    },
+    {
       "type": "function",
       "name": "addAdmin",
       "constant": false,
@@ -247,6 +341,27 @@
     },
     {
       "type": "function",
+      "name": "approveVideo",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_submissionId"
+        },
+        {
+          "type": "uint256",
+          "name": "_videoIndex"
+        },
+        {
+          "type": "uint256",
+          "name": "_credits"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
       "name": "approvedImageKey",
       "constant": true,
       "stateMutability": "view",
@@ -273,6 +388,44 @@
       "inputs": [
         {
           "type": "string",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "approvedVideoIpfs",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "approvedVideoKey",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "bytes32",
           "name": ""
         }
       ],
@@ -416,6 +569,80 @@
     },
     {
       "type": "function",
+      "name": "getVideo",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "submissionId"
+        },
+        {
+          "type": "uint256",
+          "name": "index"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "string",
+          "name": "ipfsHash"
+        },
+        {
+          "type": "string",
+          "name": "latitude"
+        },
+        {
+          "type": "string",
+          "name": "longitude"
+        },
+        {
+          "type": "uint256",
+          "name": "timestamp"
+        },
+        {
+          "type": "string",
+          "name": "status"
+        },
+        {
+          "type": "string",
+          "name": "reason"
+        },
+        {
+          "type": "uint256",
+          "name": "credits"
+        },
+        {
+          "type": "address",
+          "name": "approvedBy"
+        },
+        {
+          "type": "uint256",
+          "name": "approvedAt"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getVideosCount",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "submissionId"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
       "name": "isAdmin",
       "constant": true,
       "stateMutability": "view",
@@ -486,6 +713,27 @@
         {
           "type": "uint256",
           "name": "_submissionId"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "rejectVideo",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "_submissionId"
+        },
+        {
+          "type": "uint256",
+          "name": "_videoIndex"
+        },
+        {
+          "type": "string",
+          "name": "_reason"
         }
       ],
       "outputs": []
@@ -628,19 +876,35 @@
         },
         {
           "type": "string[]",
-          "name": "ipfsHashes"
+          "name": "imageHashes"
         },
         {
           "type": "string[]",
-          "name": "latitudes"
+          "name": "imageLatitudes"
         },
         {
           "type": "string[]",
-          "name": "longitudes"
+          "name": "imageLongitudes"
         },
         {
           "type": "uint256[]",
-          "name": "timestamps"
+          "name": "imageTimestamps"
+        },
+        {
+          "type": "string[]",
+          "name": "videoHashes"
+        },
+        {
+          "type": "string[]",
+          "name": "videoLatitudes"
+        },
+        {
+          "type": "string[]",
+          "name": "videoLongitudes"
+        },
+        {
+          "type": "uint256[]",
+          "name": "videoTimestamps"
         }
       ],
       "outputs": []

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Pie, Bar, Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -12,7 +11,17 @@ import {
   PointElement,
   LineElement,
 } from "chart.js";
-import { CheckCircle, XCircle, Clock, Coins, Leaf, Sprout } from "lucide-react";
+import { Pie, Bar, Line } from "react-chartjs-2";
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Coins,
+  Leaf,
+  Sprout,
+  Image as ImageIcon,
+  Video,
+} from "lucide-react";
 import Navbar from "../components/Navbar";
 import { useAppContext } from "../context/AppContext";
 
@@ -28,13 +37,11 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
-  const { dashboardData, dashData, token, loading } = useAppContext();
+  const { dashData, dashboardData, token, loading } = useAppContext();
   const [selected, setSelected] = useState("All");
 
   useEffect(() => {
-    if (token) {
-      dashboardData();
-    }
+    if (token) dashboardData();
   }, [token]);
 
   if (loading || !dashData || !dashData.projects) {
@@ -59,29 +66,37 @@ const Dashboard = () => {
     );
   }
 
-  const allImages = dashData.projects.flatMap((p) => p.images || []);
-  const verified = allImages.filter((img) => img.status === "verified").length;
-  const rejected = allImages.filter((img) => img.status === "rejected").length;
-  const pending = allImages.filter((img) => img.status === "pending").length;
-  const totalCredits = allImages.reduce(
-    (sum, img) => sum + (img.carbonCredits || 0),
+  // Flatten all media (images + videos)
+  const allMedia = dashData.projects.flatMap((p) =>
+    (p.images || []).map((img) => ({
+      ...img,
+      projectTitle: p.project?.title || "No Project",
+      type: img.type || "image",
+    }))
+  );
+
+  const verified = allMedia.filter((m) => m.status === "verified").length;
+  const rejected = allMedia.filter((m) => m.status === "rejected").length;
+  const pending = allMedia.filter((m) => m.status === "pending").length;
+  const totalCredits = allMedia.reduce(
+    (sum, m) => sum + (m.carbonCredits || 0),
     0
   );
 
-  const filteredImages =
+  const filteredMedia =
     selected === "All"
-      ? allImages
+      ? allMedia
       : selected === "Credits"
       ? []
-      : allImages.filter(
-          (img) => img.status?.toLowerCase() === selected.toLowerCase()
+      : allMedia.filter(
+          (m) => m.status?.toLowerCase() === selected.toLowerCase()
         );
 
   const chartData = {
     labels: ["Verified", "Rejected", "Pending"],
     datasets: [
       {
-        label: "Image Status",
+        label: "Media Status",
         data: [verified, rejected, pending],
         backgroundColor: ["#16a34a", "#dc2626", "#facc15"],
         borderWidth: 1,
@@ -141,18 +156,16 @@ const Dashboard = () => {
             Dashboard
           </h1>
           <p className="text-md sm:text-lg mb-6 text-center font-medium text-emerald-100">
-            Track your impact, monitor project images, and grow{" "}
+            Track your impact, monitor project media, and grow{" "}
             <span className="font-bold text-lime-200">carbon credits 🌍</span>
           </p>
         </motion.div>
-
-        {/* Eco Message */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="mt-6 text-center text-emerald-200 italic"
         >
-          🌱 Together, we save the Earth. Every verified image = a step towards
+          🌱 Together, we save the Earth. Every verified media = a step towards
           sustainability.
         </motion.div>
       </div>
@@ -168,8 +181,8 @@ const Dashboard = () => {
           {[
             {
               key: "All",
-              title: "All Images",
-              value: allImages.length,
+              title: "All Media",
+              value: allMedia.length,
               icon: <Sprout className="text-green-600" size={24} />,
             },
             {
@@ -219,70 +232,77 @@ const Dashboard = () => {
           ))}
         </motion.div>
 
-        {/* ===== Detailed List ===== */}
+        {/* ===== Media Cards ===== */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-white border rounded-2xl p-4 sm:p-6 mb-10 shadow-md"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-10"
         >
-          <h3 className="text-lg sm:text-xl font-semibold mb-4 text-green-700">
-            {selected === "All"
-              ? "All Images"
-              : selected === "Credits"
-              ? "Credits Overview"
-              : `${selected} Images`}
-          </h3>
+          {filteredMedia.map((m, i) => (
+            <motion.div
+              key={i}
+              whileHover={{ scale: 1.02 }}
+              className="bg-white border rounded-xl p-3 shadow-sm hover:shadow-md transition flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-gray-700">
+                  {m.projectTitle}
+                </span>
+                <span>
+                  {m.type === "image" ? (
+                    <ImageIcon size={18} className="text-blue-500" />
+                  ) : (
+                    <Video size={18} className="text-purple-500" />
+                  )}
+                </span>
+              </div>
 
-          {selected === "Credits" ? (
-            <div className="text-center text-green-700 font-semibold text-lg">
-              🎉 You have earned{" "}
-              <span className="text-2xl text-lime-600">{totalCredits}</span>{" "}
-              credits
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredImages.map((img, i) => (
-                <motion.div
-                  key={i}
-                  whileHover={{ scale: 1.02 }}
-                  className="border rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center shadow-sm hover:shadow-md transition"
-                >
-                  <div>
-                    <p className="font-medium text-sm sm:text-base text-gray-800">
-                      Image ID:{" "}
-                      <span className="text-green-600">{img._id}</span>
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-600">
-                      {dashData.ngoLocation}
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-gray-500">
-                      {img.timestamp
-                        ? new Date(img.timestamp).toLocaleDateString()
-                        : "No date"}
-                    </p>
-                  </div>
-                  <div>
-                    <img
-                      className="w-16 rounded-md border border-green-200"
-                      src={`https://aquamarine-electrical-lamprey-369.mypinata.cloud/ipfs/${img.ipfsHash}`}
-                      alt="project"
+              <div className="w-full h-36 bg-gray-100 rounded-md overflow-hidden mb-2">
+                {m.type === "image" ? (
+                  <img
+                    src={`https://aquamarine-electrical-lamprey-369.mypinata.cloud/ipfs/${m.ipfsHash}`}
+                    alt="media"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <video controls className="w-full h-full object-cover">
+                    <source
+                      src={`https://aquamarine-electrical-lamprey-369.mypinata.cloud/ipfs/${m.ipfsHash}`}
+                      type="video/mp4"
                     />
-                  </div>
+                    Your browser does not support the video tag.
+                  </video>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1 text-xs text-gray-600">
+                <span>
+                  ID: <span className="font-mono text-green-700">{m._id}</span>
+                </span>
+                <span>
+                  Status:
                   <span
-                    className={`px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-semibold ${
-                      img.status === "verified"
+                    className={`px-1 rounded ${
+                      m.status === "verified"
                         ? "bg-green-100 text-green-700"
-                        : img.status === "rejected"
+                        : m.status === "rejected"
                         ? "bg-red-100 text-red-700"
                         : "bg-yellow-100 text-yellow-700"
-                    }`}
+                    } ml-1`}
                   >
-                    {img.status || "unknown"}
+                    {m.status || "unknown"}
                   </span>
-                </motion.div>
-              ))}
-            </div>
-          )}
+                </span>
+                <span>Credits: {m.carbonCredits || 0}</span>
+                <span>
+                  Date:{" "}
+                  {m.timestamp
+                    ? new Date(m.timestamp).toLocaleDateString()
+                    : "N/A"}
+                </span>
+              </div>
+            </motion.div>
+          ))}
         </motion.div>
 
         {/* ===== Charts ===== */}
@@ -293,7 +313,7 @@ const Dashboard = () => {
         >
           <div className="bg-white border rounded-2xl p-4 sm:p-6 shadow-md">
             <h3 className="text-lg sm:text-xl font-semibold mb-4 text-green-700">
-              Image Status Overview
+              Media Status Overview
             </h3>
             <div className="w-full h-48">
               <Pie

@@ -10,6 +10,8 @@ axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
 export const AppProvider = ({ children }) => {
   const [atoken, setAtoken] = useState(localStorage.getItem("atoken") || "");
+  const [adminDetails, setAdminDetails] = useState(null);
+  const [adminWallet, setAdminWallet] = useState("");
 
   const [ngoProjects, setNgoProjects] = useState([]);
   const [projectDetails, setProjectDetails] = useState(null);
@@ -18,7 +20,26 @@ export const AppProvider = ({ children }) => {
   const navigate = useNavigate();
 
   // ------------------------
-  // 1. Fetch NGO Projects
+  // Fetch Admin Profile
+  // ------------------------
+  const fetchAdminDetails = async () => {
+    try {
+      const { data } = await axios.get("/api/admin/admin", {
+        headers: { atoken },
+      });
+      if (data.success) {
+        setAdminDetails(data.admin);
+        setAdminWallet(data.admin.blockchainAddress);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  // ------------------------
+  // Fetch NGO Projects
   // ------------------------
   const fetchNgoProjects = async () => {
     try {
@@ -36,7 +57,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // ------------------------
-  // 2. Fetch Project Details
+  // Fetch Project Details
   // ------------------------
   const fetchProjectData = async (projectId) => {
     try {
@@ -56,7 +77,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // ------------------------
-  // 3. Fetch Images
+  // Fetch Images
   // ------------------------
   const fetchImages = async (imageIds) => {
     try {
@@ -81,9 +102,14 @@ export const AppProvider = ({ children }) => {
     atoken,
     setAtoken,
 
+    adminDetails,
+    fetchAdminDetails,
+
     ngoProjects,
     projectDetails,
     images,
+    adminWallet,
+    setAdminWallet,
 
     fetchNgoProjects,
     fetchProjectData,

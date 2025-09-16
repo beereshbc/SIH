@@ -110,19 +110,26 @@ const getuserData = async (req, res) => {
 // Submit Project
 const submitProject = async (req, res) => {
   try {
-    const { ngoId, ngoName, email, projectData, images } = req.body;
+    const {
+      ngoId,
+      ngoName,
+      email,
+      projectData,
+      images = [],
+      videos = [],
+    } = req.body;
 
-    if (
-      !ngoId ||
-      !ngoName ||
-      !email ||
-      !projectData ||
-      !images ||
-      images.length === 0
-    ) {
+    if (!ngoId || !ngoName || !email || !projectData) {
       return res
         .status(400)
         .json({ success: false, message: "Incomplete submission data" });
+    }
+
+    if (images.length === 0 && videos.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one image or video required",
+      });
     }
 
     // 1️⃣ Save Project
@@ -153,11 +160,28 @@ const submitProject = async (req, res) => {
         lng: img.lng,
         timestamp: img.timestamp,
         onChainIndex: img.onChainIndex,
+        type: "image",
       });
       imageDocs.push(imageDoc._id);
     }
 
-    // 3️⃣ Save NgoProject
+    // 3️⃣ Save Videos
+    const videoDocs = [];
+    for (const vid of videos) {
+      const videoDoc = await imageModel.create({
+        // ✅ reuse same schema/model
+        projectId: projectDoc._id,
+        ipfsHash: vid.ipfsHash,
+        lat: vid.lat,
+        lng: vid.lng,
+        timestamp: vid.timestamp,
+        onChainIndex: vid.onChainIndex,
+        type: "video",
+      });
+      videoDocs.push(videoDoc._id);
+    }
+
+    // 4️⃣ Save NgoProject
     const ngoProject = await ngoProjectModel.create({
       ngoId,
       ngoName,
@@ -165,11 +189,11 @@ const submitProject = async (req, res) => {
       ngoLocation: projectData.location,
       ngoWallet: projectData.ngoWallet,
       project: projectDoc._id,
-      images: imageDocs,
+      images: [...imageDocs, ...videoDocs], // 🔥 store both
     });
 
     // ✅ Update user's projects array
-    const user = await userModel.findOne({ email: email }); // ngoId = wallet from frontend
+    const user = await userModel.findOne({ email });
     if (!user) {
       return res
         .status(404)
@@ -178,10 +202,11 @@ const submitProject = async (req, res) => {
     user.projects.push(ngoProject._id);
     await user.save();
 
-    // 4️⃣ Push to blockchain
-    const ipfsHashes = images.map((i) => i.ipfsHash);
-    const latitudes = images.map((i) => String(i.lat ?? 0));
-    const longitudes = images.map((i) => String(i.lng ?? 0));
+    // 5️⃣ Push to blockchain (images + videos)
+    const allMedia = [...images, ...videos];
+    const ipfsHashes = allMedia.map((m) => m.ipfsHash);
+    const latitudes = allMedia.map((m) => String(m.lat ?? 0));
+    const longitudes = allMedia.map((m) => String(m.lng ?? 0));
 
     const tx = await blueCarbonContract.submitProject(
       ngoProject.ngoName,
@@ -193,7 +218,7 @@ const submitProject = async (req, res) => {
     );
     const receipt = await tx.wait();
 
-    // 5️⃣ Capture submissionId from blockchain event
+    // 6️⃣ Capture submissionId from blockchain event
     const event = receipt.logs
       .map((log) => {
         try {
@@ -208,7 +233,7 @@ const submitProject = async (req, res) => {
       ngoProject.submissionIdOnChain = Number(event.args.submissionId);
       await ngoProject.save();
 
-      // 6️⃣ Save submission in SubmissionModel
+      // 7️⃣ Save submission in SubmissionModel
       await SubmissionModel.create({
         submissionIdOnChain: ngoProject.submissionIdOnChain,
         ngoId: ngoProject.ngoId,
@@ -217,7 +242,7 @@ const submitProject = async (req, res) => {
         projectRef: projectDoc._id,
         title: projectData.title,
         description: projectData.description,
-        images: imageDocs,
+        images: [...imageDocs, ...videoDocs],
       });
     }
 

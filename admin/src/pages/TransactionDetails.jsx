@@ -64,11 +64,7 @@ const TransactionDetails = () => {
         {/* Transaction Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
           {[
-            {
-              label: "Tx Hash",
-              icon: <Hash size={16} />,
-              value: tx.txHash,
-            },
+            { label: "Tx Hash", icon: <Hash size={16} />, value: tx.txHash },
             {
               label: "Admin Wallet",
               icon: <Wallet size={16} />,
@@ -96,6 +92,11 @@ const TransactionDetails = () => {
               value: tx.status,
               iconStatus: <CheckCircle2 size={16} className="text-green-600" />,
             },
+            {
+              label: "Media Type",
+              icon: <Layers size={16} />,
+              value: tx.imageId?.type || "-",
+            },
           ].map((item, i) => (
             <div
               key={i}
@@ -115,9 +116,9 @@ const TransactionDetails = () => {
           ))}
         </div>
 
-        {/* Project & Image Cards in Reverse Layout */}
+        {/* Project & Media */}
         <div className="flex flex-col-reverse md:flex-row gap-6">
-          {/* Verified Image */}
+          {/* Verified Media */}
           {tx.imageId && tx.imageId.status === "verified" && (
             <motion.div
               className="flex-1 bg-green-50 p-4 rounded-xl border-l-4 border-green-400 shadow-sm flex flex-col gap-2"
@@ -126,7 +127,7 @@ const TransactionDetails = () => {
               transition={{ duration: 0.4 }}
             >
               <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                Verified Image
+                Verified {tx.imageId.type}
               </h2>
               <div className="text-sm text-gray-700 space-y-1">
                 <div>
@@ -147,13 +148,29 @@ const TransactionDetails = () => {
                   </span>
                 </div>
               </div>
-              <motion.img
-                src={`https://ipfs.io/ipfs/${tx.imageId.ipfsHash}`}
-                alt="Blockchain Image"
-                className="w-full h-52 object-cover rounded-md border-2 border-green-400 mt-2"
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-              />
+
+              {tx.imageId.type === "image" ? (
+                <motion.img
+                  src={`https://ipfs.io/ipfs/${tx.imageId.ipfsHash}`}
+                  alt="Blockchain Media"
+                  className="w-full h-52 object-cover rounded-md border-2 border-green-400 mt-2"
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                />
+              ) : (
+                <motion.video
+                  controls
+                  className="w-full h-52 object-cover rounded-md border-2 border-green-400 mt-2"
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                >
+                  <source
+                    src={`https://ipfs.io/ipfs/${tx.imageId.ipfsHash}`}
+                    type="video/mp4"
+                  />
+                  Your browser does not support the video tag.
+                </motion.video>
+              )}
             </motion.div>
           )}
 

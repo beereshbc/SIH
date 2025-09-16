@@ -33,6 +33,15 @@ const imageSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
+
+    // ✅ Video support (new fields)
+    type: {
+      type: String,
+      enum: ["image", "video"],
+      default: "image",
+    },
+    duration: { type: Number, default: null }, // video length in seconds
+    thumbnailHash: { type: String, default: null }, // optional preview image
   },
   { timestamps: true }
 );

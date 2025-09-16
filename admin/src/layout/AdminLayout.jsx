@@ -1,11 +1,18 @@
 import React from "react";
 import Sidebar from "../components/Sidebar";
 
-export default function AdminLayout({ children }) {
+const AdminLayout = ({ children }) => {
   return (
     <div className="flex">
+      {/* Fixed Sidebar */}
       <Sidebar />
-      <div className="flex-1 bg-gray-50 min-h-screen p-6">{children}</div>
+
+      {/* Main Content */}
+      <main className="flex-1 md:ml-64 min-h-screen bg-gray-50 p-6">
+        {children}
+      </main>
     </div>
   );
-}
+};
+
+export default AdminLayout;
