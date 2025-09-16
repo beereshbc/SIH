@@ -10,6 +10,8 @@ import Users from "./pages/Users";
 import Credits from "./pages/Credits";
 import Transactions from "./pages/Transactions";
 import toast, { Toaster } from "react-hot-toast";
+import AddAdmin from "./pages/AddAdmin";
+import TransactionDetails from "./pages/TransactionDetails";
 
 const App = () => {
   const { atoken } = useAppContext();
@@ -27,6 +29,8 @@ const App = () => {
           <Route path="/users" element={<Users />} />
           <Route path="/credits" element={<Credits />} />
           <Route path="/transactions" element={<Transactions />} />
+          <Route path="/add-admin" element={<AddAdmin />} />
+          <Route path="/transactions/:id" element={<TransactionDetails />} />
         </Routes>
       </AdminLayout>
     </>

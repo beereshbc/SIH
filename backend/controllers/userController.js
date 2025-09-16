@@ -237,7 +237,7 @@ const submitProject = async (req, res) => {
 const getNgoDashboardData = async (req, res) => {
   try {
     // ✅ extract NGO userId from body (set by userAuth)
-    const userId = req.body.userId; // <-- FIXED LINE
+    const userId = req.userId;
 
     if (!userId) {
       return res
@@ -309,10 +309,38 @@ const getNgoDashboardData = async (req, res) => {
   }
 };
 
+const getUserProfile = async (req, res) => {
+  try {
+    const userId = req.userId; // ✅ coming from middleware
+
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Unauthorized: No userId" });
+    }
+
+    const user = await userModel.findById(userId);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error("❌ Error fetching profile:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
 export {
   registerUser,
   loginUser,
   getuserData,
   submitProject,
   getNgoDashboardData,
+  getUserProfile,
 };

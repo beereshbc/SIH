@@ -1,11 +1,35 @@
 {
-  "address": "0xb6508628A9Ec8d9384a9CEb9eC0A9BD150aAdF85",
+  "address": "0x5191939A283FCb28C47a187660820A7178002164",
   "abi": [
     {
       "type": "constructor",
       "stateMutability": "undefined",
       "payable": false,
       "inputs": []
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "AdminAdded",
+      "inputs": [
+        {
+          "type": "address",
+          "name": "admin",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "AdminRemoved",
+      "inputs": [
+        {
+          "type": "address",
+          "name": "admin",
+          "indexed": true
+        }
+      ]
     },
     {
       "type": "event",
@@ -176,17 +200,16 @@
     },
     {
       "type": "function",
-      "name": "admin",
-      "constant": true,
-      "stateMutability": "view",
+      "name": "addAdmin",
+      "constant": false,
       "payable": false,
-      "inputs": [],
-      "outputs": [
+      "inputs": [
         {
           "type": "address",
-          "name": ""
+          "name": "_newAdmin"
         }
-      ]
+      ],
+      "outputs": []
     },
     {
       "type": "function",
@@ -288,7 +311,7 @@
       "inputs": [
         {
           "type": "address",
-          "name": "_ngoWallet"
+          "name": "ngoWallet"
         }
       ],
       "outputs": [
@@ -307,11 +330,11 @@
       "inputs": [
         {
           "type": "uint256",
-          "name": "_submissionId"
+          "name": "submissionId"
         },
         {
           "type": "uint256",
-          "name": "_index"
+          "name": "index"
         }
       ],
       "outputs": [
@@ -362,7 +385,7 @@
       "inputs": [
         {
           "type": "uint256",
-          "name": "_submissionId"
+          "name": "submissionId"
         }
       ],
       "outputs": [
@@ -381,12 +404,31 @@
       "inputs": [
         {
           "type": "address",
-          "name": "_ngoWallet"
+          "name": "ngoWallet"
         }
       ],
       "outputs": [
         {
           "type": "uint256[]",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "isAdmin",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
           "name": ""
         }
       ]
@@ -444,6 +486,19 @@
         {
           "type": "uint256",
           "name": "_submissionId"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "removeAdmin",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "_admin"
         }
       ],
       "outputs": []
@@ -537,55 +592,55 @@
       "inputs": [
         {
           "type": "string",
-          "name": "_ngoName"
+          "name": "ngoName"
         },
         {
           "type": "string",
-          "name": "_ngoEmail"
+          "name": "ngoEmail"
         },
         {
           "type": "string",
-          "name": "_title"
+          "name": "title"
         },
         {
           "type": "string",
-          "name": "_description"
+          "name": "description"
         },
         {
           "type": "string",
-          "name": "_ecosystem"
+          "name": "ecosystem"
         },
         {
           "type": "string",
-          "name": "_location"
+          "name": "location"
         },
         {
           "type": "uint256",
-          "name": "_areaRestored"
+          "name": "areaRestored"
         },
         {
           "type": "uint256",
-          "name": "_carbonStored"
+          "name": "carbonStored"
         },
         {
           "type": "uint256",
-          "name": "_treesPlanted"
+          "name": "treesPlanted"
         },
         {
           "type": "string[]",
-          "name": "_ipfsHashes"
+          "name": "ipfsHashes"
         },
         {
           "type": "string[]",
-          "name": "_latitudes"
+          "name": "latitudes"
         },
         {
           "type": "string[]",
-          "name": "_longitudes"
+          "name": "longitudes"
         },
         {
           "type": "uint256[]",
-          "name": "_timestamps"
+          "name": "timestamps"
         }
       ],
       "outputs": []

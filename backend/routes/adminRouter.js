@@ -7,10 +7,16 @@ import {
   getNgoProjects,
   getProjects,
   approveImageController,
-  getTransactionByImageId,
-  getOnChainImage,
   approveNgoProjectOnChain,
-  rejectImageController, // ✅ import new function
+  rejectImageController,
+  addAdminController,
+  getAllTransactions,
+  getTransactionById,
+  getAdminDashboard,
+  getAllUsers,
+  getAllCreditsData,
+  addAdmin,
+  getAllAdmins,
 } from "../controllers/adminController.js";
 import adminAuth from "../middlewares/adminAuth.js";
 
@@ -26,20 +32,20 @@ adminRouter.post("/projects", adminAuth, getProjects);
 adminRouter.post("/images", adminAuth, getImages);
 adminRouter.post("/images/reject", adminAuth, rejectImageController);
 adminRouter.post("/images/approve", adminAuth, approveImageController);
-
+adminRouter.post("/add-admin", adminAuth, addAdminController);
+adminRouter.get("/transaction/:id", adminAuth, getTransactionById);
+adminRouter.get("/dashboard", adminAuth, getAdminDashboard);
+adminRouter.get("/users", adminAuth, getAllUsers);
+adminRouter.get("/credits", adminAuth, getAllCreditsData);
+adminRouter.post("/add-admin", adminAuth, addAdmin);
+adminRouter.get("/admins", adminAuth, getAllAdmins);
 // ✅ Bulk approve NGO project (off-chain → on-chain)
 adminRouter.post(
   "/projects/approve-onchain",
   adminAuth,
   approveNgoProjectOnChain
 );
-
-// Transaction & on-chain getters
-adminRouter.get(
-  "/transaction/image/:imageId",
-  adminAuth,
-  getTransactionByImageId
-);
-adminRouter.get("/onchain/image", adminAuth, getOnChainImage);
+adminRouter.get("/transactions", getAllTransactions);
+adminRouter.post("/approve-image", adminAuth, approveImageController);
 
 export default adminRouter;

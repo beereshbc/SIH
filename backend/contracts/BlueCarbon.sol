@@ -2,8 +2,9 @@
 pragma solidity ^0.8.17;
 
 /// @title BlueCarbon - NGO Project + Carbon Credits System
-/// @notice Handles NGO submissions, image-level approvals, and carbon credits
+/// @notice Handles NGO submissions, image approvals/rejections, credits, and multi-admin management
 contract BlueCarbon {
+
     // ------------------------------------
     // STRUCTS
     // ------------------------------------
@@ -22,7 +23,7 @@ contract BlueCarbon {
     struct PlantingSubmission {
         address ngoWallet;
         string ngoName;
-        string ngoEmail;       // ✅ added email field (useful for off-chain + audit)
+        string ngoEmail;
         string title;
         string description;
         string ecosystem;
@@ -31,15 +32,15 @@ contract BlueCarbon {
         uint256 carbonStored;
         uint256 treesPlanted;
         Image[] images;
-        string status;         // pending | approved | rejected
+        string status;     // pending | approved | rejected
         uint256 submittedAt;
         bool exists;
     }
 
     // ------------------------------------
-    // STATE VARIABLES
+    // STATE
     // ------------------------------------
-    address public admin;
+    mapping(address => bool) public isAdmin; // Multi-admin support
     uint256 public submissionCount;
 
     mapping(uint256 => PlantingSubmission) public submissions;
@@ -52,6 +53,8 @@ contract BlueCarbon {
     // ------------------------------------
     // EVENTS
     // ------------------------------------
+    event AdminAdded(address indexed admin);
+    event AdminRemoved(address indexed admin);
     event SubmissionCreated(uint256 indexed submissionId, address indexed ngoWallet);
     event ProjectSubmitted(uint256 submissionId, string ngoEmail);
     event ImageApproved(
@@ -81,7 +84,12 @@ contract BlueCarbon {
     // MODIFIERS
     // ------------------------------------
     modifier onlyAdmin() {
-        require(msg.sender == admin, "Only admin can call this");
+        require(isAdmin[msg.sender], "Only admin can call this");
+        _;
+    }
+
+    modifier submissionExists(uint256 _submissionId) {
+        require(submissions[_submissionId].exists, "Submission does not exist");
         _;
     }
 
@@ -89,14 +97,113 @@ contract BlueCarbon {
     // CONSTRUCTOR
     // ------------------------------------
     constructor() {
-        admin = msg.sender;
+        isAdmin[msg.sender] = true; // deployer becomes first admin
+        emit AdminAdded(msg.sender);
+    }
+
+    // ------------------------------------
+    // ADMIN FUNCTIONS
+    // ------------------------------------
+    function addAdmin(address _newAdmin) external onlyAdmin {
+        isAdmin[_newAdmin] = true;
+        emit AdminAdded(_newAdmin);
+    }
+
+    function removeAdmin(address _admin) external onlyAdmin {
+        isAdmin[_admin] = false;
+        emit AdminRemoved(_admin);
+    }
+
+    function approveImage(uint256 _submissionId, uint256 _imageIndex, uint256 _credits)
+        external onlyAdmin submissionExists(_submissionId)
+    {
+        PlantingSubmission storage submission = submissions[_submissionId];
+        require(_imageIndex < submission.images.length, "Image index OOB");
+
+        Image storage img = submission.images[_imageIndex];
+        require(keccak256(bytes(img.status)) != keccak256(bytes("verified")), "Image already verified");
+
+        bytes32 key = keccak256(abi.encodePacked(img.ipfsHash));
+        require(!approvedImageKey[key], "Duplicate image (ipfs)");
+        require(!approvedIpfsHash[img.ipfsHash], "Duplicate ipfsHash");
+
+        img.status = "verified";
+        img.credits = _credits;
+        img.approvedBy = msg.sender;
+        img.approvedAt = block.timestamp;
+
+        approvedImageKey[key] = true;
+        approvedIpfsHash[img.ipfsHash] = true;
+
+        carbonCredits[submission.ngoWallet] += _credits;
+
+        emit ImageApproved(
+            _submissionId,
+            _imageIndex,
+            submission.ngoWallet,
+            img.ipfsHash,
+            img.latitude,
+            img.longitude,
+            _credits,
+            msg.sender,
+            block.timestamp
+        );
+    }
+
+    function rejectImage(uint256 _submissionId, uint256 _imageIndex, string memory _reason)
+        external onlyAdmin submissionExists(_submissionId)
+    {
+        PlantingSubmission storage submission = submissions[_submissionId];
+        require(_imageIndex < submission.images.length, "Image index OOB");
+
+        Image storage img = submission.images[_imageIndex];
+        require(keccak256(bytes(img.status)) != keccak256(bytes("verified")), "Image already verified");
+
+        img.status = "rejected";
+        img.reason = _reason;
+        img.approvedBy = msg.sender;
+        img.approvedAt = block.timestamp;
+
+        emit ImageRejected(
+            _submissionId,
+            _imageIndex,
+            submission.ngoWallet,
+            img.ipfsHash,
+            _reason,
+            msg.sender,
+            block.timestamp
+        );
+    }
+
+    function approveSubmission(uint256 _submissionId) external onlyAdmin submissionExists(_submissionId) {
+        PlantingSubmission storage submission = submissions[_submissionId];
+        require(keccak256(bytes(submission.status)) != keccak256(bytes("approved")), "Already approved");
+
+        uint256 totalCredits = 0;
+        for (uint i = 0; i < submission.images.length; i++) {
+            if (keccak256(bytes(submission.images[i].status)) == keccak256(bytes("verified"))) {
+                totalCredits += submission.images[i].credits;
+            }
+        }
+
+        submission.status = "approved";
+        carbonCredits[submission.ngoWallet] += totalCredits;
+
+        emit SubmissionApproved(_submissionId, submission.ngoWallet, totalCredits);
+    }
+
+    function rejectSubmission(uint256 _submissionId) external onlyAdmin submissionExists(_submissionId) {
+        PlantingSubmission storage submission = submissions[_submissionId];
+        require(keccak256(bytes(submission.status)) != keccak256(bytes("approved")), "Already approved");
+
+        submission.status = "rejected";
+
+        emit SubmissionRejected(_submissionId, submission.ngoWallet);
     }
 
     // ------------------------------------
     // USER FUNCTIONS
     // ------------------------------------
-
-    /// @notice Minimal project submit (for NGO off-chain + on-chain mapping)
     function submitProject(
         string memory ngoName,
         string memory ngoEmail,
@@ -104,7 +211,7 @@ contract BlueCarbon {
         string[] memory ipfsHashes,
         string[] memory latitudes,
         string[] memory longitudes
-    ) public {
+    ) external {
         require(
             ipfsHashes.length == latitudes.length &&
             latitudes.length == longitudes.length,
@@ -116,14 +223,8 @@ contract BlueCarbon {
 
         submission.ngoWallet = msg.sender;
         submission.ngoName = ngoName;
-        submission.ngoEmail = ngoEmail; // ✅ stored email
+        submission.ngoEmail = ngoEmail;
         submission.title = title;
-        submission.description = "";
-        submission.ecosystem = "";
-        submission.location = "";
-        submission.areaRestored = 0;
-        submission.carbonStored = 0;
-        submission.treesPlanted = 0;
         submission.status = "pending";
         submission.submittedAt = block.timestamp;
         submission.exists = true;
@@ -143,30 +244,28 @@ contract BlueCarbon {
         }
 
         ngoSubmissions[msg.sender].push(submissionCount);
-
         emit ProjectSubmitted(submissionCount, ngoEmail);
     }
 
-    /// @notice Full-featured project submission
     function submitPlanting(
-        string memory _ngoName,
-        string memory _ngoEmail,
-        string memory _title,
-        string memory _description,
-        string memory _ecosystem,
-        string memory _location,
-        uint256 _areaRestored,
-        uint256 _carbonStored,
-        uint256 _treesPlanted,
-        string[] memory _ipfsHashes,
-        string[] memory _latitudes,
-        string[] memory _longitudes,
-        uint256[] memory _timestamps
-    ) public {
+        string memory ngoName,
+        string memory ngoEmail,
+        string memory title,
+        string memory description,
+        string memory ecosystem,
+        string memory location,
+        uint256 areaRestored,
+        uint256 carbonStored,
+        uint256 treesPlanted,
+        string[] memory ipfsHashes,
+        string[] memory latitudes,
+        string[] memory longitudes,
+        uint256[] memory timestamps
+    ) external {
         require(
-            _ipfsHashes.length == _latitudes.length &&
-            _latitudes.length == _longitudes.length &&
-            _longitudes.length == _timestamps.length,
+            ipfsHashes.length == latitudes.length &&
+            latitudes.length == longitudes.length &&
+            longitudes.length == timestamps.length,
             "Array length mismatch"
         );
 
@@ -174,25 +273,25 @@ contract BlueCarbon {
         PlantingSubmission storage submission = submissions[submissionCount];
 
         submission.ngoWallet = msg.sender;
-        submission.ngoName = _ngoName;
-        submission.ngoEmail = _ngoEmail;
-        submission.title = _title;
-        submission.description = _description;
-        submission.ecosystem = _ecosystem;
-        submission.location = _location;
-        submission.areaRestored = _areaRestored;
-        submission.carbonStored = _carbonStored;
-        submission.treesPlanted = _treesPlanted;
+        submission.ngoName = ngoName;
+        submission.ngoEmail = ngoEmail;
+        submission.title = title;
+        submission.description = description;
+        submission.ecosystem = ecosystem;
+        submission.location = location;
+        submission.areaRestored = areaRestored;
+        submission.carbonStored = carbonStored;
+        submission.treesPlanted = treesPlanted;
         submission.status = "pending";
         submission.submittedAt = block.timestamp;
         submission.exists = true;
 
-        for (uint i = 0; i < _ipfsHashes.length; i++) {
+        for (uint i = 0; i < ipfsHashes.length; i++) {
             submission.images.push(Image({
-                ipfsHash: _ipfsHashes[i],
-                latitude: _latitudes[i],
-                longitude: _longitudes[i],
-                timestamp: _timestamps[i],
+                ipfsHash: ipfsHashes[i],
+                latitude: latitudes[i],
+                longitude: longitudes[i],
+                timestamp: timestamps[i],
                 status: "pending",
                 reason: "",
                 credits: 0,
@@ -202,103 +301,13 @@ contract BlueCarbon {
         }
 
         ngoSubmissions[msg.sender].push(submissionCount);
-
         emit SubmissionCreated(submissionCount, msg.sender);
-    }
-
-    // ------------------------------------
-    // ADMIN FUNCTIONS
-    // ------------------------------------
-
-    function approveImage(uint256 _submissionId, uint256 _imageIndex, uint256 _credits) public onlyAdmin {
-        require(submissions[_submissionId].exists, "Submission does not exist");
-        require(_imageIndex < submissions[_submissionId].images.length, "Image index OOB");
-
-        Image storage img = submissions[_submissionId].images[_imageIndex];
-        require(keccak256(bytes(img.status)) != keccak256(bytes("verified")), "Image already verified");
-
-        bytes32 key = keccak256(abi.encodePacked(img.ipfsHash));
-        // bytes32 key = keccak256(abi.encodePacked(img.ipfsHash, "|", img.latitude, "|", img.longitude));
-        require(!approvedImageKey[key], "Duplicate image (ipfs+gps)");
-        if (approvedIpfsHash[img.ipfsHash]) revert("Duplicate ipfsHash already approved");
-
-        img.status = "verified";
-        img.credits = _credits;
-        img.approvedBy = msg.sender;
-        img.approvedAt = block.timestamp;
-
-        approvedImageKey[key] = true;
-        approvedIpfsHash[img.ipfsHash] = true;
-
-        address ngoWallet = submissions[_submissionId].ngoWallet;
-        carbonCredits[ngoWallet] += _credits;
-
-        emit ImageApproved(
-            _submissionId,
-            _imageIndex,
-            ngoWallet,
-            img.ipfsHash,
-            img.latitude,
-            img.longitude,
-            _credits,
-            msg.sender,
-            block.timestamp
-        );
-    }
-
-    function rejectImage(uint256 _submissionId, uint256 _imageIndex, string memory _reason) public onlyAdmin {
-        require(submissions[_submissionId].exists, "Submission does not exist");
-        require(_imageIndex < submissions[_submissionId].images.length, "Image index OOB");
-
-        Image storage img = submissions[_submissionId].images[_imageIndex];
-        require(keccak256(bytes(img.status)) != keccak256(bytes("verified")), "Image already verified");
-
-        img.status = "rejected";
-        img.reason = _reason;
-        img.approvedBy = msg.sender;
-        img.approvedAt = block.timestamp;
-
-        emit ImageRejected(
-            _submissionId,
-            _imageIndex,
-            submissions[_submissionId].ngoWallet,
-            img.ipfsHash,
-            _reason,
-            msg.sender,
-            block.timestamp
-        );
-    }
-
-    function approveSubmission(uint256 _submissionId) public onlyAdmin {
-        require(submissions[_submissionId].exists, "Submission does not exist");
-        require(keccak256(bytes(submissions[_submissionId].status)) != keccak256(bytes("approved")), "Already approved");
-
-        uint256 totalCredits = 0;
-        for (uint i = 0; i < submissions[_submissionId].images.length; i++) {
-            if (keccak256(bytes(submissions[_submissionId].images[i].status)) == keccak256(bytes("verified"))) {
-                totalCredits += submissions[_submissionId].images[i].credits;
-            }
-        }
-
-        submissions[_submissionId].status = "approved";
-        address ngoWallet = submissions[_submissionId].ngoWallet;
-
-        emit SubmissionApproved(_submissionId, ngoWallet, totalCredits);
-    }
-
-    function rejectSubmission(uint256 _submissionId) public onlyAdmin {
-        require(submissions[_submissionId].exists, "Submission does not exist");
-        require(keccak256(bytes(submissions[_submissionId].status)) != keccak256(bytes("approved")), "Already approved");
-
-        submissions[_submissionId].status = "rejected";
-
-        emit SubmissionRejected(_submissionId, submissions[_submissionId].ngoWallet);
     }
 
     // ------------------------------------
     // VIEW FUNCTIONS
     // ------------------------------------
-    function getImage(uint256 _submissionId, uint256 _index) public view returns (
+    function getImage(uint256 submissionId, uint256 index) external view returns (
         string memory ipfsHash,
         string memory latitude,
         string memory longitude,
@@ -309,7 +318,7 @@ contract BlueCarbon {
         address approvedBy,
         uint256 approvedAt
     ) {
-        Image storage img = submissions[_submissionId].images[_index];
+        Image storage img = submissions[submissionId].images[index];
         return (
             img.ipfsHash,
             img.latitude,
@@ -323,15 +332,15 @@ contract BlueCarbon {
         );
     }
 
-    function getImagesCount(uint256 _submissionId) public view returns(uint256) {
-        return submissions[_submissionId].images.length;
+    function getImagesCount(uint256 submissionId) external view returns(uint256) {
+        return submissions[submissionId].images.length;
     }
 
-    function getCarbonCredits(address _ngoWallet) public view returns(uint256) {
-        return carbonCredits[_ngoWallet];
+    function getCarbonCredits(address ngoWallet) external view returns(uint256) {
+        return carbonCredits[ngoWallet];
     }
 
-    function getNgoSubmissions(address _ngoWallet) public view returns(uint256[] memory) {
-        return ngoSubmissions[_ngoWallet];
+    function getNgoSubmissions(address ngoWallet) external view returns(uint256[] memory) {
+        return ngoSubmissions[ngoWallet];
     }
 }

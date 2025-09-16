@@ -7,12 +7,12 @@ const wrapperVariants = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.2, // delay between cards
+      staggerChildren: 0.2,
     },
   },
 };
 
-// Card variant for animation
+// Card animation
 const cardVariants = {
   hidden: { opacity: 0, y: 50, scale: 0.95 },
   visible: {
@@ -25,14 +25,14 @@ const cardVariants = {
 
 const hoverEffect = {
   scale: 1.05,
-  rotate: 1, // subtle rotation on hover
+  rotate: 1,
   transition: { type: "spring", stiffness: 300 },
 };
 
 const Testimonials = () => {
   return (
     <motion.div
-      className="testimonials-wrapper"
+      className="testimonials-wrapper bg-gradient-to-b from-emerald-50  via-green-100 to-emerald-200 "
       variants={wrapperVariants}
       initial="hidden"
       whileInView="visible"

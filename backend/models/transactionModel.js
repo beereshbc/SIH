@@ -2,26 +2,32 @@ import mongoose from "mongoose";
 
 const transactionSchema = new mongoose.Schema(
   {
-    txHash: { type: String, required: true, index: true },
-    chain: { type: String, default: "ethereum" },
-    contractAddress: { type: String, required: true },
-    submissionId: { type: mongoose.Schema.Types.ObjectId, ref: "NgoProject" }, // or submissionModel if you use that
-    projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
-    imageId: { type: mongoose.Schema.Types.ObjectId, ref: "Image" },
-    ipfsHash: { type: String, required: true },
-    lat: { type: Number },
-    lng: { type: Number },
-    credits: { type: Number, default: 0 },
-    adminId: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" }, // from adminAuth
-    adminWallet: { type: String }, // admin blockchain address
-    ngoWallet: { type: String },
-    ngoName: { type: String },
+    txHash: { type: String, required: true, unique: true }, // Blockchain tx hash
+    imageId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Image",
+      required: true,
+    },
+    projectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Project",
+      required: true,
+    },
+    ngoProjectId: { type: mongoose.Schema.Types.ObjectId, ref: "NgoProject" },
 
-    blockNumber: { type: Number },
-    timestamp: { type: Date, default: Date.now },
+    adminId: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
+    adminWallet: { type: String },
+
+    credits: { type: Number, required: true },
+
+    status: {
+      type: String,
+      enum: ["pending", "success", "failed"],
+      default: "success",
+    },
   },
   { timestamps: true }
 );
 
-const transactionModel = mongoose.model("Transaction", transactionSchema);
-export default transactionModel;
+const Transaction = mongoose.model("Transaction", transactionSchema);
+export default Transaction;

@@ -24,13 +24,13 @@ body {
 }
 
 :root {
-    --p1: #40A2E3;
-    /* hover overlay color */
-    --p2: #000000;
-    /* default text color */
-    --bg-color: #fff;
-    /* page background */
-    --text-color: white;
+    --p1: #34d399;
+    /* eco green overlay */
+    --p2: #064e3b;
+    /* dark green text */
+    --bg-color: #f0fdf4;
+    /* eco light background */
+    --text-color: #ffffff;
     /* text on hover */
 }
 
@@ -41,13 +41,14 @@ body {
     padding: 0;
 }
 
-/* Wrapper for cards */
+/* Wrapper */
 .testimonials-wrapper {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 30px;
-    padding: 50px 20px;
+    padding: 60px 20px;
+    background: linear-gradient(to bottom right, #ecfdf5, #d1fae5);
 }
 
 /* Card container */
@@ -60,11 +61,11 @@ body {
     color: var(--p2);
     width: 300px;
     overflow: hidden;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12px 30px rgba(0, 128, 0, 0.15);
     transition: all 0.4s ease-in-out;
 }
 
-/* Hover overlay effect */
+/* Hover overlay */
 .container::after {
     content: '';
     background: var(--p1);
@@ -76,14 +77,14 @@ body {
     top: 0;
     z-index: 0;
     clip-path: circle(10% at 0% 0%);
-    transition: all 0.4s ease-in-out;
+    transition: all 0.5s ease-in-out;
 }
 
 .container:hover::after {
     clip-path: circle(150% at 50% 50%);
 }
 
-/* Content inside card */
+/* Content inside */
 .content {
     position: relative;
     z-index: 1;
@@ -108,14 +109,15 @@ body {
 
 .container:hover .content img {
     border-color: var(--text-color);
-    transform: scale(1.05);
+    transform: scale(1.08);
 }
 
 /* Title */
 .content h2 {
     margin: 10px 0 5px;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     color: var(--p2);
+    font-weight: bold;
     transition: all 0.4s ease-in-out;
 }
 
@@ -125,8 +127,8 @@ body {
 
 /* Description */
 .content p {
-    font-size: 0.95rem;
-    line-height: 1.4;
+    font-size: 1rem;
+    line-height: 1.5;
     transition: all 0.4s ease-in-out;
 }
 

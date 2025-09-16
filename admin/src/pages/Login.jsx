@@ -1,6 +1,9 @@
 import React, { useState } from "react";
+import { User, Mail, Lock, Wallet } from "lucide-react";
 import axios from "axios";
 import { useAppContext } from "../context/AppContext";
+import { connectWallet as walletConnect } from "../utils/wallet"; // wallet util
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function AdminAuth() {
   const [mode, setMode] = useState("signup"); // signup | login
@@ -19,11 +22,11 @@ export default function AdminAuth() {
 
   const connectWallet = async () => {
     try {
-      if (!window.ethereum) return setMsg("No Web3 wallet found");
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
-      setForm((f) => ({ ...f, blockchainAddress: accounts[0] }));
+      const result = await walletConnect();
+      if (result?.address) {
+        setForm((f) => ({ ...f, blockchainAddress: result.address }));
+        setMsg(`Wallet connected: ${result.address}`);
+      }
     } catch (err) {
       console.error(err);
       setMsg("Wallet connection failed");
@@ -53,7 +56,6 @@ export default function AdminAuth() {
       setAtoken(res.data.token);
 
       setMsg(mode === "signup" ? "Signup successful" : "Login successful");
-      // navigate to dashboard
     } catch (err) {
       console.error(err);
       setMsg(err?.response?.data?.message || `${mode} failed`);
@@ -62,117 +64,153 @@ export default function AdminAuth() {
     }
   };
 
+  const inputVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: 20 },
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <form
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+      <motion.form
         onSubmit={submit}
-        className="w-full max-w-md bg-white p-8 rounded-2xl shadow"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl"
       >
-        <h2 className="text-2xl font-semibold mb-4">
+        <h2 className="text-2xl font-bold mb-6 text-center">
           {mode === "signup" ? "Admin Signup" : "Admin Login"}
         </h2>
 
-        {mode === "signup" && (
-          <>
-            <label className="block mb-2">Name</label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              required
-              className="w-full p-2 border rounded mb-3"
-            />
-          </>
-        )}
-
-        <label className="block mb-2">Email</label>
-        <input
-          name="email"
-          value={form.email}
-          onChange={handleChange}
-          type="email"
-          required
-          className="w-full p-2 border rounded mb-3"
-        />
-
-        <label className="block mb-2">Password</label>
-        <input
-          name="password"
-          value={form.password}
-          onChange={handleChange}
-          type="password"
-          required
-          className="w-full p-2 border rounded mb-3"
-        />
-
-        {mode === "signup" && (
-          <>
-            <label className="block mb-2">Blockchain Address (required)</label>
-            <div className="flex gap-2">
-              <input
-                name="blockchainAddress"
-                value={form.blockchainAddress}
-                onChange={handleChange}
-                required
-                className="flex-1 p-2 border rounded"
-              />
-              <button
-                type="button"
-                onClick={connectWallet}
-                className="px-3 py-2 bg-gray-800 text-white rounded"
+        <div className="flex flex-col gap-4">
+          <AnimatePresence mode="wait">
+            {mode === "signup" && (
+              <motion.div
+                key="name"
+                variants={inputVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
               >
-                Use Wallet
-              </button>
-            </div>
-          </>
-        )}
+                <label className="flex items-center gap-2 text-gray-700 mb-1">
+                  <User size={18} /> Name
+                </label>
+                <input
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  required
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  placeholder="Enter your full name"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        <div className="mt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-2 rounded text-white ${
-              mode === "signup" ? "bg-blue-600" : "bg-green-600"
-            }`}
+          <motion.div
+            key="email"
+            variants={inputVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
           >
-            {loading
-              ? mode === "signup"
-                ? "Signing..."
-                : "Logging..."
-              : mode === "signup"
-              ? "Signup"
-              : "Login"}
-          </button>
-        </div>
+            <label className="flex items-center gap-2 text-gray-700 mb-1">
+              <Mail size={18} /> Email
+            </label>
+            <input
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              type="email"
+              required
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="you@example.com"
+            />
+          </motion.div>
 
-        {msg && <p className="mt-3 text-sm text-red-600 text-center">{msg}</p>}
+          <motion.div
+            key="password"
+            variants={inputVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            <label className="flex items-center gap-2 text-gray-700 mb-1">
+              <Lock size={18} /> Password
+            </label>
+            <input
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              type="password"
+              required
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter your password"
+            />
+          </motion.div>
 
-        <div className="mt-4 text-center">
-          {mode === "signup" ? (
-            <p className="text-sm">
-              Already have an account?{" "}
-              <button
-                type="button"
-                onClick={() => setMode("login")}
-                className="text-blue-600 hover:underline"
-              >
-                Login here
-              </button>
-            </p>
-          ) : (
-            <p className="text-sm">
-              Don’t have an account?{" "}
-              <button
-                type="button"
-                onClick={() => setMode("signup")}
-                className="text-green-600 hover:underline"
-              >
-                Signup here
-              </button>
-            </p>
+          {mode === "signup" && (
+            <motion.div
+              key="wallet"
+              variants={inputVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              <label className="flex items-center gap-2 text-gray-700 mb-1">
+                <Wallet size={18} /> Blockchain Wallet
+              </label>
+              <div className="flex gap-2">
+                <input
+                  name="blockchainAddress"
+                  value={form.blockchainAddress}
+                  onChange={handleChange}
+                  required
+                  className="flex-1 p-2 border rounded-lg bg-gray-100 focus:outline-none"
+                  placeholder="Connect your wallet"
+                />
+                <button
+                  type="button"
+                  onClick={connectWallet}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                >
+                  {form.blockchainAddress ? "Reconnect" : "Connect"}
+                </button>
+              </div>
+            </motion.div>
           )}
         </div>
-      </form>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full mt-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition disabled:opacity-60"
+        >
+          {loading
+            ? mode === "signup"
+              ? "Signing up..."
+              : "Logging in..."
+            : mode === "signup"
+            ? "Signup"
+            : "Login"}
+        </button>
+
+        {msg && <p className="mt-3 text-center text-red-600">{msg}</p>}
+
+        <p className="mt-4 text-center text-sm text-gray-500">
+          {mode === "signup"
+            ? "Already have an account?"
+            : "Don't have an account?"}{" "}
+          <button
+            type="button"
+            onClick={() => setMode(mode === "signup" ? "login" : "signup")}
+            className="text-blue-600 font-medium hover:underline"
+          >
+            {mode === "signup" ? "Login here" : "Signup here"}
+          </button>
+        </p>
+      </motion.form>
     </div>
   );
 }

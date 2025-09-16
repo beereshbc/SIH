@@ -70,24 +70,27 @@ const splitText = (text) =>
 const Hero2 = () => {
   return (
     <motion.div
-      className="h-auto bg-p2 flex justify-center items-center px-4 py-10 md:py-16 overflow-x-hidden"
+      className="h-auto bg-gradient-to-b from-emerald-200 via- to-emerald-50 
+                 flex justify-center items-center px-4 py-12 md:py-20 overflow-x-hidden"
       variants={containerVariants}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
     >
-      <div className="z-20 flex flex-col-reverse md:flex-row items-center gap-8 md:gap-10 max-w-6xl w-full">
+      <div className="z-20 flex flex-col-reverse md:flex-row items-center gap-10 max-w-6xl w-full">
         {/* Text Content */}
-        <div className="flex-1 flex flex-col gap-6">
+        <div className="flex-1 flex flex-col gap-8">
           <motion.div
-            className="border border-p1 px-6 md:px-8 py-4 rounded-lg cursor-pointer "
+            className="bg-white/80 backdrop-blur-md border border-emerald-300 
+                       px-6 md:px-8 py-6 rounded-2xl shadow-lg hover:shadow-2xl 
+                       cursor-pointer transition duration-300"
             variants={cardVariants}
             whileHover="hover"
           >
-            <p className="text-xl md:text-3xl font-bold mb-2 text-p1">
+            <p className="text-2xl md:text-3xl font-bold mb-3 text-emerald-700">
               {splitText("Understanding GHG Scopes")}
             </p>
-            <p className="text-p1 text-sm md:text-base leading-relaxed">
+            <p className="text-gray-700 text-sm md:text-base leading-relaxed">
               Scope 1 (Direct) emissions come from company facilities and
               vehicles. Scope 2 (Indirect) includes purchased electricity,
               steam, heating & cooling for own use. Scope 3 (Indirect) covers
@@ -97,14 +100,16 @@ const Hero2 = () => {
           </motion.div>
 
           <motion.div
-            className="border border-p1 px-6 md:px-8 py-4 rounded-lg cursor-pointer "
+            className="bg-white/80 backdrop-blur-md border border-emerald-300 
+                       px-6 md:px-8 py-6 rounded-2xl shadow-lg hover:shadow-2xl 
+                       cursor-pointer transition duration-300"
             variants={cardVariants}
             whileHover="hover"
           >
-            <p className="text-xl md:text-3xl font-bold mb-2 text-p1">
+            <p className="text-2xl md:text-3xl font-bold mb-3 text-emerald-700">
               {splitText("Upstream & Downstream Activities")}
             </p>
-            <p className="text-p1 text-sm md:text-base leading-relaxed">
+            <p className="text-gray-700 text-sm md:text-base leading-relaxed">
               Upstream activities include purchased goods, fuel, transportation,
               and waste. Downstream activities include product use, end-of-life
               treatment, and investments. Proper measurement ensures
@@ -121,7 +126,7 @@ const Hero2 = () => {
           whileHover="hover"
         >
           <img
-            className="w-full rounded-xl object-cover duration-500"
+            className="w-full rounded-2xl  object-cover"
             src={assets.img13}
             alt="GHG Scope Illustration"
           />

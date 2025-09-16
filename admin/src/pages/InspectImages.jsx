@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle, XCircle, Hash, MapPin, Copy, Layers } from "lucide-react"; // ✅ added Layers icon
+import { CheckCircle, XCircle, Hash, MapPin, Copy } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { useAppContext } from "../context/AppContext";
@@ -10,6 +10,7 @@ const InspectImages = ({ ngo, fetchImages }) => {
   const [activeAction, setActiveAction] = useState({});
   const [loading, setLoading] = useState(false);
   const { atoken } = useAppContext();
+  const [bulkApproved, setBulkApproved] = useState(false);
 
   // Copy Hash
   const handleCopy = (text) => {
@@ -17,7 +18,6 @@ const InspectImages = ({ ngo, fetchImages }) => {
     toast.success("Copied to clipboard!");
   };
 
-  // Approve Single
   const handleApproveSingle = async (img) => {
     const credits = inputs[img._id];
     if (!credits || isNaN(credits)) return toast.error("Enter valid credits");
@@ -28,16 +28,21 @@ const InspectImages = ({ ngo, fetchImages }) => {
         { imageId: img._id, credits },
         { headers: { atoken } }
       );
-      if (data.success) toast.success(`Approved with ${credits} credits!`);
-      else toast.error(data.msg || "Approval failed");
+
+      if (data.success)
+        toast.success(`Approved with ${credits} credits! Tx: ${data.txHash}`);
+      else toast.error(data.message || "Approval failed"); // updated to match backend response
+
       fetchImages?.();
       setActiveAction({ ...activeAction, [img._id]: null });
     } catch (err) {
-      toast.error(err.response?.data?.msg || err.message || "Approval failed");
+      toast.error(
+        err.response?.data?.message || err.message || "Approval failed"
+      );
     }
   };
 
-  // Reject Single
+  // Reject Single Image
   const handleRejectSingle = async (img) => {
     const reason = inputs[`reason-${img._id}`];
     if (!reason) return toast.error("Enter reason");
@@ -57,55 +62,53 @@ const InspectImages = ({ ngo, fetchImages }) => {
     }
   };
 
-  // ✅ Bulk Approve NGO Project
-  // ✅ Bulk Approve NGO Project with credits for each image
-  const handleApproveProject = async () => {
-    if (!ngo?._id) return toast.error("Invalid NGO project");
+  // Automatically approve entire project on-chain when card opens
+  useEffect(() => {
+    const autoApproveProject = async () => {
+      if (!ngo?._id || bulkApproved) return;
 
-    // Collect credits from inputs
-    const creditsPerImage = ngo.images.map((img) =>
-      Number(inputs[img._id] || 0)
-    );
-
-    setLoading(true);
-    try {
-      const { data } = await axios.post(
-        "/api/admin/projects/approve-onchain",
-        { projectId: ngo._id, creditsPerImage },
-        { headers: { atoken } }
+      // Check if any image is pending
+      const pendingImages = ngo.images.filter(
+        (img) => img.status === "pending"
       );
+      if (pendingImages.length === 0) return;
 
-      if (data.success) {
-        toast.success(data.msg || "Project approved!");
-        fetchImages?.(); // refresh UI
-      } else {
-        toast.error(data.msg || "Bulk approval failed");
+      setLoading(true);
+      try {
+        // Assign credits 0 if not set
+        const creditsPerImage = pendingImages.map((img) =>
+          Number(inputs[img._id] || 0)
+        );
+
+        const { data } = await axios.post(
+          "/api/admin/projects/approve-onchain",
+          { projectId: ngo._id, creditsPerImage },
+          { headers: { atoken } }
+        );
+
+        if (data.success) {
+          toast.success("Project auto-approved on-chain! TxHashes saved.");
+          fetchImages?.();
+          setBulkApproved(true);
+        } else {
+          toast.error(data.msg || "Auto bulk approval failed");
+        }
+      } catch (err) {
+        toast.error(
+          err.response?.data?.msg || err.message || "Auto bulk approval failed"
+        );
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      toast.error(
-        err.response?.data?.msg || err.message || "Bulk approval failed"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    autoApproveProject();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ngo]);
 
   return (
     <div className="flex flex-col gap-6 p-4">
-      {/* ✅ Project Bulk Approval Button */}
-      {ngo?.images?.length > 0 && (
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={handleApproveProject}
-          disabled={loading}
-          className={`flex items-center gap-2 self-start border border-blue-600 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-600 hover:text-white transition ${
-            loading ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-        >
-          <Layers size={18} />
-          {loading ? "Approving..." : "Approve Entire Project On-Chain"}
-        </motion.button>
-      )}
+      {/* Removed Manual Bulk Approval Button */}
 
       {/* Individual Images */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -170,87 +173,87 @@ const InspectImages = ({ ngo, fetchImages }) => {
                   </span>
                 )}
               </div>
+
+              {/* Individual Actions for Pending */}
+              {img.status === "pending" && (
+                <div className="flex flex-col gap-3 mt-2">
+                  {/* Approve Button */}
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() =>
+                      setActiveAction({ ...activeAction, [img._id]: "approve" })
+                    }
+                    className="flex items-center gap-2 w-full justify-center border border-green-600 text-green-700 px-4 py-2 rounded-lg hover:bg-green-600 hover:text-white"
+                  >
+                    <CheckCircle size={18} /> Approve
+                  </motion.button>
+
+                  {/* Approve Input */}
+                  {activeAction[img._id] === "approve" && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex flex-col gap-2 w-full"
+                    >
+                      <input
+                        type="number"
+                        placeholder="Credits"
+                        value={inputs[img._id] || ""}
+                        onChange={(e) =>
+                          setInputs({ ...inputs, [img._id]: e.target.value })
+                        }
+                        className="w-full border rounded-md px-3 py-2 text-sm"
+                      />
+                      <button
+                        onClick={() => handleApproveSingle(img)}
+                        className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                      >
+                        Confirm Approve
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {/* Reject Button */}
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() =>
+                      setActiveAction({ ...activeAction, [img._id]: "reject" })
+                    }
+                    className="flex items-center gap-2 w-full justify-center border border-red-600 text-red-700 px-4 py-2 rounded-lg hover:bg-red-600 hover:text-white"
+                  >
+                    <XCircle size={18} /> Reject
+                  </motion.button>
+
+                  {/* Reject Input */}
+                  {activeAction[img._id] === "reject" && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex flex-col gap-2 w-full"
+                    >
+                      <input
+                        type="text"
+                        placeholder="Reason"
+                        value={inputs[`reason-${img._id}`] || ""}
+                        onChange={(e) =>
+                          setInputs({
+                            ...inputs,
+                            [`reason-${img._id}`]: e.target.value,
+                          })
+                        }
+                        className="w-full border rounded-md px-3 py-2 text-sm"
+                      />
+                      <button
+                        onClick={() => handleRejectSingle(img)}
+                        className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+                      >
+                        Confirm Reject
+                      </button>
+                    </motion.div>
+                  )}
+                </div>
+              )}
             </div>
-
-            {/* Actions */}
-            {img.status === "pending" && (
-              <div className="flex flex-col gap-3 mt-2">
-                {/* Approve Button */}
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() =>
-                    setActiveAction({ ...activeAction, [img._id]: "approve" })
-                  }
-                  className="flex items-center gap-2 w-full justify-center border border-green-600 text-green-700 px-4 py-2 rounded-lg hover:bg-green-600 hover:text-white"
-                >
-                  <CheckCircle size={18} /> Approve
-                </motion.button>
-
-                {/* Approve Input */}
-                {activeAction[img._id] === "approve" && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col gap-2 w-full"
-                  >
-                    <input
-                      type="number"
-                      placeholder="Credits"
-                      value={inputs[img._id] || ""}
-                      onChange={(e) =>
-                        setInputs({ ...inputs, [img._id]: e.target.value })
-                      }
-                      className="w-full border rounded-md px-3 py-2 text-sm"
-                    />
-                    <button
-                      onClick={() => handleApproveSingle(img)}
-                      className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-                    >
-                      Confirm Approve
-                    </button>
-                  </motion.div>
-                )}
-
-                {/* Reject Button */}
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() =>
-                    setActiveAction({ ...activeAction, [img._id]: "reject" })
-                  }
-                  className="flex items-center gap-2 w-full justify-center border border-red-600 text-red-700 px-4 py-2 rounded-lg hover:bg-red-600 hover:text-white"
-                >
-                  <XCircle size={18} /> Reject
-                </motion.button>
-
-                {/* Reject Input */}
-                {activeAction[img._id] === "reject" && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col gap-2 w-full"
-                  >
-                    <input
-                      type="text"
-                      placeholder="Reason"
-                      value={inputs[`reason-${img._id}`] || ""}
-                      onChange={(e) =>
-                        setInputs({
-                          ...inputs,
-                          [`reason-${img._id}`]: e.target.value,
-                        })
-                      }
-                      className="w-full border rounded-md px-3 py-2 text-sm"
-                    />
-                    <button
-                      onClick={() => handleRejectSingle(img)}
-                      className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-                    >
-                      Confirm Reject
-                    </button>
-                  </motion.div>
-                )}
-              </div>
-            )}
           </motion.div>
         ))}
       </div>

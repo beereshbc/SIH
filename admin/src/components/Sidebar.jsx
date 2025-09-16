@@ -20,71 +20,91 @@ export default function Sidebar() {
     { name: "Users", path: "/users", icon: Users },
     { name: "Credits", path: "/credits", icon: Coins },
     { name: "Transactions", path: "/transactions", icon: Receipt },
+    { name: "Add Admin", path: "/add-admin", icon: Users },
   ];
+
+  const linkVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: { opacity: 1, x: 0 },
+  };
 
   return (
     <div className="flex">
       {/* Mobile Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 border border-gray-300 rounded-lg bg-white"
+        className="md:hidden fixed top-4 left-4 z-50 p-2 border border-green-300 rounded-lg bg-white shadow-lg text-green-700 hover:bg-green-50 transition"
       >
         {isOpen ? <X size={22} /> : <Menu size={22} />}
       </button>
 
-      {/* Sidebar for Desktop */}
-      <div className="hidden md:flex w-64 min-h-screen border-r border-gray-200 bg-white text-gray-900 flex-col">
-        <div className="text-xl font-bold p-6 border-b border-gray-200">
-          BlueCarbon Admin
+      {/* Desktop Sidebar */}
+      <div className="hidden md:flex w-64 min-h-screen flex-col bg-white border-r border-green-200 shadow-lg">
+        <div className="text-2xl font-extrabold p-6 text-green-800 border-b border-green-200">
+          🌱 BlueCarbon Admin
         </div>
-        <nav className="flex-1 p-4 flex flex-col gap-2">
-          {links.map(({ name, path, icon: Icon }) => (
-            <NavLink
+        <nav className="flex-1 p-4 flex flex-col gap-3">
+          {links.map(({ name, path, icon: Icon }, i) => (
+            <motion.div
               key={name}
-              to={path}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2 rounded-lg border border-transparent hover:border-gray-300 transition-colors ${
-                  isActive ? "bg-gray-100 font-semibold border-gray-300" : ""
-                }`
-              }
+              initial="hidden"
+              animate="visible"
+              variants={linkVariants}
+              transition={{ delay: i * 0.05 }}
             >
-              <Icon size={18} />
-              {name}
-            </NavLink>
+              <NavLink
+                to={path}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium text-green-900 hover:bg-green-100 hover:text-green-800 ${
+                    isActive ? "bg-green-200 shadow-inner font-semibold" : ""
+                  }`
+                }
+              >
+                <Icon size={18} />
+                {name}
+              </NavLink>
+            </motion.div>
           ))}
         </nav>
       </div>
 
-      {/* Mobile Sidebar with Animation */}
+      {/* Mobile Sidebar */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ x: -300 }}
-            animate={{ x: 0 }}
-            exit={{ x: -300 }}
+            initial={{ x: -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -300, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed top-0 left-0 w-64 h-full bg-white border-r border-gray-200 text-gray-900 z-40 flex flex-col"
+            className="fixed top-0 left-0 w-64 h-full bg-white border-r border-green-200 shadow-lg z-50 flex flex-col"
           >
-            <div className="text-xl font-bold p-6 border-b border-gray-200">
-              BlueCarbon Admin
+            <div className="text-2xl font-extrabold p-6 text-green-800 border-b border-green-200">
+              🌱 BlueCarbon Admin
             </div>
-            <nav className="flex-1 p-4 flex flex-col gap-2">
-              {links.map(({ name, path, icon: Icon }) => (
-                <NavLink
+            <nav className="flex-1 p-4 flex flex-col gap-3">
+              {links.map(({ name, path, icon: Icon }, i) => (
+                <motion.div
                   key={name}
-                  to={path}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-2 rounded-lg border border-transparent hover:border-gray-300 transition-colors ${
-                      isActive
-                        ? "bg-gray-100 font-semibold border-gray-300"
-                        : ""
-                    }`
-                  }
-                  onClick={() => setIsOpen(false)} // Close sidebar on click
+                  initial="hidden"
+                  animate="visible"
+                  variants={linkVariants}
+                  transition={{ delay: i * 0.05 }}
                 >
-                  <Icon size={18} />
-                  {name}
-                </NavLink>
+                  <NavLink
+                    to={path}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium text-green-900 hover:bg-green-100 hover:text-green-800 ${
+                        isActive
+                          ? "bg-green-200 shadow-inner font-semibold"
+                          : ""
+                      }`
+                    }
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Icon size={18} />
+                    {name}
+                  </NavLink>
+                </motion.div>
               ))}
             </nav>
           </motion.div>

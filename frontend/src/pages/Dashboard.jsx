@@ -12,7 +12,7 @@ import {
   PointElement,
   LineElement,
 } from "chart.js";
-import { CheckCircle, XCircle, Clock, Coins } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Coins, Leaf, Sprout } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { useAppContext } from "../context/AppContext";
 
@@ -50,9 +50,9 @@ const Dashboard = () => {
               duration: 1.5,
               repeatType: "reverse",
             }}
-            className="text-blue-600 font-semibold"
+            className="text-green-600 font-semibold"
           >
-            Loading dashboard...
+            Loading your eco dashboard...
           </motion.div>
         </div>
       </>
@@ -83,7 +83,7 @@ const Dashboard = () => {
       {
         label: "Image Status",
         data: [verified, rejected, pending],
-        backgroundColor: ["#22c55e", "#ef4444", "#eab308"],
+        backgroundColor: ["#16a34a", "#dc2626", "#facc15"],
         borderWidth: 1,
       },
     ],
@@ -105,7 +105,7 @@ const Dashboard = () => {
       {
         label: "Pending",
         data: [1, 3, 2, 4, pending],
-        backgroundColor: "#eab308",
+        backgroundColor: "#facc15",
       },
     ],
   };
@@ -116,10 +116,10 @@ const Dashboard = () => {
       {
         label: "Credits Earned",
         data: [20, 40, 70, totalCredits],
-        fill: false,
-        borderColor: "#3b82f6",
-        backgroundColor: "#3b82f6",
-        tension: 0.3,
+        fill: true,
+        borderColor: "#16a34a",
+        backgroundColor: "rgba(34,197,94,0.3)",
+        tension: 0.4,
       },
     ],
   };
@@ -129,22 +129,31 @@ const Dashboard = () => {
       <Navbar />
 
       {/* ===== Hero Section ===== */}
-      <div className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-20 px-6 sm:px-12 lg:px-20 rounded-b-3xl">
+      <div className="w-full bg-gradient-to-r from-green-600 to-emerald-700 text-white py-20 px-6 sm:px-12 lg:px-20 rounded-b-3xl shadow-xl">
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
           className="max-w-4xl mx-auto text-center"
         >
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-            Welcome to the Carbon Dashboard
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4 flex items-center justify-center playfont italic gap-2">
+            <Leaf size={40} className="text-lime-300" /> Welcome to the Eco
+            Dashboard
           </h1>
-          <p className="text-lg sm:text-xl mb-6">
-            Track all project images, statuses, and earned carbon credits in one
-            place.
+          <p className="text-md sm:text-lg mb-6 text-center font-medium text-emerald-100">
+            Track your impact, monitor project images, and grow{" "}
+            <span className="font-bold text-lime-200">carbon credits 🌍</span>
           </p>
-          <button className="bg-white text-blue-600 font-semibold px-6 py-3 rounded-lg hover:scale-105 transition">
-            Explore Projects
-          </button>
+        </motion.div>
+
+        {/* Eco Message */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-6 text-center text-emerald-200 italic"
+        >
+          🌱 Together, we save the Earth. Every verified image = a step towards
+          sustainability.
         </motion.div>
       </div>
 
@@ -156,9 +165,13 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-10"
         >
-          {/* Cards */}
           {[
-            { key: "All", title: "All Images", value: allImages.length },
+            {
+              key: "All",
+              title: "All Images",
+              value: allImages.length,
+              icon: <Sprout className="text-green-600" size={24} />,
+            },
             {
               key: "Credits",
               title: "Credits",
@@ -184,21 +197,25 @@ const Dashboard = () => {
               icon: <Clock className="text-yellow-600" size={24} />,
             },
           ].map((card) => (
-            <div
+            <motion.div
               key={card.key}
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 200 }}
               onClick={() => setSelected(card.key)}
-              className={`bg-white border rounded-2xl p-4 sm:p-6 cursor-pointer transition hover:border-blue-400 ${
-                selected === card.key ? "ring-2 ring-blue-400" : ""
+              className={`bg-white border rounded-2xl p-4 sm:p-6 cursor-pointer transition hover:border-green-400 shadow-md hover:shadow-lg ${
+                selected === card.key ? "ring-2 ring-green-400" : ""
               }`}
             >
               <div className="flex items-center gap-3">
                 {card.icon}
-                <h2 className="text-base sm:text-lg font-semibold">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-800">
                   {card.title}
                 </h2>
               </div>
-              <p className="mt-2 text-xl sm:text-2xl font-bold">{card.value}</p>
-            </div>
+              <p className="mt-2 text-xl sm:text-2xl font-bold text-green-700">
+                {card.value}
+              </p>
+            </motion.div>
           ))}
         </motion.div>
 
@@ -206,9 +223,9 @@ const Dashboard = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-white border rounded-2xl p-4 sm:p-6 mb-10"
+          className="bg-white border rounded-2xl p-4 sm:p-6 mb-10 shadow-md"
         >
-          <h3 className="text-lg sm:text-xl font-semibold mb-4">
+          <h3 className="text-lg sm:text-xl font-semibold mb-4 text-green-700">
             {selected === "All"
               ? "All Images"
               : selected === "Credits"
@@ -217,21 +234,23 @@ const Dashboard = () => {
           </h3>
 
           {selected === "Credits" ? (
-            <div className="text-center text-blue-600 font-semibold text-lg">
-              You have earned <span className="text-2xl">{totalCredits}</span>{" "}
-              credits 🎉
+            <div className="text-center text-green-700 font-semibold text-lg">
+              🎉 You have earned{" "}
+              <span className="text-2xl text-lime-600">{totalCredits}</span>{" "}
+              credits
             </div>
           ) : (
             <div className="space-y-3">
               {filteredImages.map((img, i) => (
                 <motion.div
                   key={i}
-                  whileHover={{ scale: 1.01 }}
-                  className="border rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center"
+                  whileHover={{ scale: 1.02 }}
+                  className="border rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center shadow-sm hover:shadow-md transition"
                 >
                   <div>
-                    <p className="font-medium text-sm sm:text-base">
-                      Image ID: {img._id}
+                    <p className="font-medium text-sm sm:text-base text-gray-800">
+                      Image ID:{" "}
+                      <span className="text-green-600">{img._id}</span>
                     </p>
                     <p className="text-xs sm:text-sm text-gray-600">
                       {dashData.ngoLocation}
@@ -244,7 +263,7 @@ const Dashboard = () => {
                   </div>
                   <div>
                     <img
-                      className="w-16 rounded-sm"
+                      className="w-16 rounded-md border border-green-200"
                       src={`https://aquamarine-electrical-lamprey-369.mypinata.cloud/ipfs/${img.ipfsHash}`}
                       alt="project"
                     />
@@ -272,8 +291,8 @@ const Dashboard = () => {
           animate={{ opacity: 1 }}
           className="grid md:grid-cols-2 gap-6"
         >
-          <div className="bg-white border rounded-2xl p-4 sm:p-6">
-            <h3 className="text-lg sm:text-xl font-semibold mb-4">
+          <div className="bg-white border rounded-2xl p-4 sm:p-6 shadow-md">
+            <h3 className="text-lg sm:text-xl font-semibold mb-4 text-green-700">
               Image Status Overview
             </h3>
             <div className="w-full h-48">
@@ -284,8 +303,8 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white border rounded-2xl p-4 sm:p-6">
-            <h3 className="text-lg sm:text-xl font-semibold mb-4">
+          <div className="bg-white border rounded-2xl p-4 sm:p-6 shadow-md">
+            <h3 className="text-lg sm:text-xl font-semibold mb-4 text-green-700">
               Credits Growth Over Time
             </h3>
             <div className="w-full h-52">
@@ -296,8 +315,8 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white border rounded-2xl p-4 sm:p-6 md:col-span-2">
-            <h3 className="text-lg sm:text-xl font-semibold mb-4">
+          <div className="bg-white border rounded-2xl p-4 sm:p-6 md:col-span-2 shadow-md">
+            <h3 className="text-lg sm:text-xl font-semibold mb-4 text-green-700">
               Monthly Status Distribution
             </h3>
             <div className="w-full h-56">

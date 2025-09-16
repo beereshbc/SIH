@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { assets } from "../assets/assets";
+import { useNavigate } from "react-router-dom";
 
 const textVariant = (delay = 0) => ({
   hidden: { opacity: 0, y: 30 },
@@ -23,6 +24,8 @@ const buttonVariant = {
 };
 
 const Header = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="relative w-full h-screen overflow-hidden z-10">
       {/* Background Video */}
@@ -89,6 +92,7 @@ const Header = () => {
             variants={buttonVariant}
             whileHover="hover"
             whileTap="tap"
+            onClick={() => navigate("/registry")}
           >
             <span className="relative z-10 group-hover:text-p2">
               Upload Contribution
@@ -102,6 +106,7 @@ const Header = () => {
             variants={buttonVariant}
             whileHover="hover"
             whileTap="tap"
+            onClick={() => navigate("/dashboard")}
           >
             <span className="relative z-10 group-hover:text-white">
               View Dashboard
