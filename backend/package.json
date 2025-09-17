@@ -23,6 +23,7 @@
     "solidity-coverage": "^0.8.16"
   },
   "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",

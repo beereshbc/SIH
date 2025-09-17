@@ -7,7 +7,13 @@ import adminModel from "../models/adminModel.js";
 import ngoProjectModel from "../models/ngoProjectModel.js";
 import projectModel from "../models/projectModel.js";
 import Transaction from "../models/transactionModel.js";
-import { wallet, provider, blueCarbonContract } from "../config/blockchain.js";
+import {
+  wallet,
+  provider,
+  blueCarbonContract,
+  approveImageOnChain,
+  sendTokens,
+} from "../config/blockchain.js";
 import { ethers } from "ethers";
 import SubmissionModel from "../models/submissionModel.js";
 import userModel from "../models/userModel.js";
@@ -214,21 +220,26 @@ const getImages = async (req, res) => {
 };
 
 // ---------------------
-// Approve Single Image Controller
+// Approve Single Image Controller (Fixed)
 // ---------------------
 const approveImageController = async (req, res) => {
   try {
     const { imageId, credits } = req.body;
-    const adminId = req.adminId; // from auth middleware
+    const adminId = req.adminId;
 
-    // 1️⃣ Find the image
+    if (!blueCarbonContract) {
+      return res.status(500).json({
+        success: false,
+        message: "Blockchain contract not initialized",
+      });
+    }
+
     const img = await Image.findById(imageId);
     if (!img)
       return res
         .status(404)
         .json({ success: false, message: "Image not found" });
 
-    // 2️⃣ Find corresponding NGO project
     const ngoProject = await ngoProjectModel.findOne({
       project: img.projectId,
     });
@@ -237,14 +248,12 @@ const approveImageController = async (req, res) => {
         .status(404)
         .json({ success: false, message: "NGO Project not found" });
 
-    // 3️⃣ Ensure submissionIdOnChain exists
     if (!ngoProject.submissionIdOnChain)
       return res.status(400).json({
         success: false,
         message: "submissionIdOnChain missing for NGO project",
       });
 
-    // 4️⃣ Ensure onChainIndex exists
     if (img.onChainIndex == null) {
       const index = ngoProject.images.findIndex((i) => i.equals(img._id));
       if (index === -1)
@@ -255,35 +264,45 @@ const approveImageController = async (req, res) => {
       await img.save();
     }
 
-    // 5️⃣ Call smart contract
+    // ✅ Connect contract with wallet
+    const contractWithSigner = blueCarbonContract.connect(wallet);
+
     let tx;
     try {
-      tx = await blueCarbonContract
-        .connect(wallet)
-        .approveImage(
-          ngoProject.submissionIdOnChain,
-          img.onChainIndex,
-          credits
-        );
+      tx = await contractWithSigner.approveImage(
+        ngoProject.submissionIdOnChain,
+        img.onChainIndex,
+        credits
+      );
     } catch (contractErr) {
-      // ✅ Handle duplicate image or other revert messages
       const reason =
         contractErr?.reason ||
         contractErr?.error?.message ||
         "Contract execution failed";
-      if (reason.includes("Duplicate image")) {
+      if (reason.includes("Duplicate image"))
         return res.status(400).json({
           success: false,
-          message: "Duplicate image (IPFS) detected! Please reject it first.",
+          message: "Duplicate image detected! Reject first.",
         });
-      }
-      // other contract errors
       return res.status(500).json({ success: false, message: reason });
     }
 
     const txHash = tx.hash;
 
-    // 6️⃣ Update image in DB
+    // ✅ Token transfer
+    try {
+      const tokenAmount = ethers.parseUnits((credits * 10).toString(), 18);
+      const tokenTx = await tokenContract
+        .connect(wallet)
+        .transfer(img.ngoWallet, tokenAmount);
+      console.log(
+        `Sent ${credits * 10} BCT to ${img.ngoWallet}, tx: ${tokenTx.hash}`
+      );
+    } catch (tokenErr) {
+      console.error("Token transfer failed:", tokenErr.message);
+    }
+
+    // ✅ Update DB
     img.status = "verified";
     img.carbonCredits = credits;
     img.txHash = txHash;
@@ -292,34 +311,26 @@ const approveImageController = async (req, res) => {
     img.approvedByAdminWallet = wallet.address;
     await img.save();
 
-    // 7️⃣ Update NGO project total credits
     ngoProject.totalCarbonCredits =
       (ngoProject.totalCarbonCredits || 0) + credits;
     await ngoProject.save();
 
-    // 8️⃣ Save blockchain transaction in DB
-    try {
-      await Transaction.create({
-        txHash,
-        imageId: img._id,
-        projectId: img.projectId,
-        ngoProjectId: ngoProject._id,
-        adminId,
-        adminWallet: wallet.address,
-        credits,
-        status: "success",
-      });
-    } catch (txSaveErr) {
-      console.error("Failed to save transaction in DB:", txSaveErr.message);
-    }
+    await Transaction.create({
+      txHash,
+      imageId: img._id,
+      projectId: img.projectId,
+      ngoProjectId: ngoProject._id,
+      adminId,
+      adminWallet: wallet.address,
+      credits,
+      status: "success",
+    });
 
-    // 9️⃣ Wait for confirmation asynchronously
     tx.wait()
-      .then(() => console.log(`Transaction ${txHash} confirmed on chain.`))
-      .catch((err) => console.error("Tx confirmation failed:", err));
+      .then(() => console.log(`Transaction ${txHash} confirmed.`))
+      .catch(console.error);
 
-    // 10️⃣ Return response immediately
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: "Image approved successfully",
       txHash,
@@ -327,20 +338,27 @@ const approveImageController = async (req, res) => {
       project: ngoProject,
     });
   } catch (error) {
-    console.error("❌ Approve Image Error:", error);
-    return res
+    console.error("Approve Image Error:", error);
+    res
       .status(500)
       .json({ success: false, message: "Failed to approve image", error });
   }
 };
 
 // ---------------------
-// Bulk Approve
+// Bulk Approve NGO Project (Fixed)
 // ---------------------
 const approveNgoProjectOnChain = async (req, res) => {
   try {
     const { projectId, creditsPerImage } = req.body;
     const adminId = req.admin?.id;
+
+    if (!blueCarbonContract) {
+      return res.status(500).json({
+        success: false,
+        message: "Blockchain contract not initialized",
+      });
+    }
 
     const ngoProject = await ngoProjectModel
       .findById(projectId)
@@ -428,120 +446,10 @@ const approveNgoProjectOnChain = async (req, res) => {
     return res.status(500).json({ success: false, msg: err.message });
   }
 };
-
-// ---------------------
 // Reject Image
 // ---------------------
 
-const rejectImageController = async (req, res) => {
-  try {
-    const { imageId, reason } = req.body;
-    const adminId = req.adminId; // from auth middleware
-
-    if (!imageId || !reason) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Image ID and reason required" });
-    }
-
-    // 1️⃣ Find image
-    const img = await Image.findById(imageId);
-    if (!img)
-      return res
-        .status(404)
-        .json({ success: false, message: "Image not found" });
-
-    // 2️⃣ Find corresponding NGO project
-    const ngoProject = await ngoProjectModel.findOne({
-      project: img.projectId,
-    });
-    if (!ngoProject)
-      return res
-        .status(404)
-        .json({ success: false, message: "NGO Project not found" });
-
-    if (!ngoProject.submissionIdOnChain) {
-      return res.status(400).json({
-        success: false,
-        message: "submissionIdOnChain missing for NGO project",
-      });
-    }
-
-    if (img.onChainIndex == null) {
-      const index = ngoProject.images.findIndex((i) => i.equals(img._id));
-      if (index === -1)
-        return res
-          .status(400)
-          .json({ success: false, message: "Image not linked to NGO project" });
-      img.onChainIndex = index;
-      await img.save();
-    }
-
-    // 3️⃣ Call smart contract
-    let tx;
-    try {
-      tx = await blueCarbonContract
-        .connect(wallet)
-        .rejectImage(ngoProject.submissionIdOnChain, img.onChainIndex, reason);
-    } catch (contractErr) {
-      const reason =
-        contractErr?.reason ||
-        contractErr?.error?.message ||
-        "Contract execution failed";
-      return res.status(500).json({ success: false, message: reason });
-    }
-
-    const txHash = tx.hash;
-
-    // 4️⃣ Update image in DB
-    img.status = "rejected";
-    img.reason = reason;
-    img.txHash = txHash;
-    img.rejectedAt = new Date();
-    img.approvedByAdminId = adminId;
-    img.approvedByAdminWallet = wallet.address;
-    await img.save();
-
-    // 5️⃣ Save transaction in DB
-    try {
-      await Transaction.create({
-        txHash,
-        imageId: img._id,
-        projectId: img.projectId,
-        ngoProjectId: ngoProject._id,
-        adminId,
-        adminWallet: wallet.address,
-        credits: 0, // rejected → no credits
-        status: "rejected", // ✅ updated
-      });
-    } catch (txSaveErr) {
-      console.error("Failed to save rejection tx:", txSaveErr.message);
-    }
-
-    // 6️⃣ Wait for confirmation asynchronously
-    tx.wait()
-      .then(() =>
-        console.log(
-          `Reject tx ${txHash} confirmed on chain for image ${img._id}`
-        )
-      )
-      .catch((err) => console.error("Reject tx confirmation failed:", err));
-
-    // 7️⃣ Return response immediately
-    return res.status(200).json({
-      success: true,
-      message: "Image rejected successfully",
-      txHash,
-      reason,
-      image: img,
-    });
-  } catch (err) {
-    console.error("❌ rejectImageController error:", err);
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to reject image", error: err });
-  }
-};
+const rejectImageController = async (req, res) => {};
 
 // ---------------------
 // Get Transactions

@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-/// @title BlueCarbon - NGO Project + Carbon Credits System
-/// @notice Handles NGO submissions, image + video approvals/rejections, credits, and multi-admin management
+/// @title BlueCarbon - NGO Project + Carbon Credits + ERC20 Token Rewards
+/// @notice Handles NGO submissions, image/video approvals/rejections, credits, and multi-admin management
+interface IERC20 {
+    function transfer(address to, uint256 amount) external returns (bool);
+    function balanceOf(address account) external view returns (uint256);
+}
+
 contract BlueCarbon {
 
     // ------------------------------------
@@ -13,9 +18,9 @@ contract BlueCarbon {
         string latitude;
         string longitude;
         uint256 timestamp;
-        string status;    // pending | verified | rejected
-        string reason;    // rejection reason
-        uint256 credits;  // credits assigned if verified
+        string status;
+        string reason;
+        uint256 credits;
         address approvedBy;
         uint256 approvedAt;
     }
@@ -25,9 +30,9 @@ contract BlueCarbon {
         string latitude;
         string longitude;
         uint256 timestamp;
-        string status;    // pending | verified | rejected
-        string reason;    // rejection reason
-        uint256 credits;  // credits assigned if verified
+        string status;
+        string reason;
+        uint256 credits;
         address approvedBy;
         uint256 approvedAt;
     }
@@ -45,25 +50,25 @@ contract BlueCarbon {
         uint256 treesPlanted;
         Image[] images;
         Video[] videos;
-        string status;     // pending | approved | rejected
+        string status;
         uint256 submittedAt;
         bool exists;
     }
 
     // ------------------------------------
-    // STATE
+    // STATE VARIABLES
     // ------------------------------------
-    mapping(address => bool) public isAdmin; // Multi-admin support
+    IERC20 public token;                     
+    uint256 public tokenPerCredit = 100 * 10**18;
+    mapping(address => bool) public isAdmin;
     uint256 public submissionCount;
-
     mapping(uint256 => PlantingSubmission) public submissions;
     mapping(address => uint256[]) public ngoSubmissions;
     mapping(address => uint256) public carbonCredits;
 
     mapping(bytes32 => bool) public approvedImageKey;
-    mapping(string => bool) public approvedIpfsHash;
-
     mapping(bytes32 => bool) public approvedVideoKey;
+    mapping(string => bool) public approvedIpfsHash;
     mapping(string => bool) public approvedVideoIpfs;
 
     // ------------------------------------
@@ -73,50 +78,11 @@ contract BlueCarbon {
     event AdminRemoved(address indexed admin);
     event SubmissionCreated(uint256 indexed submissionId, address indexed ngoWallet);
     event ProjectSubmitted(uint256 submissionId, string ngoEmail);
-
-    event ImageApproved(
-        uint256 indexed submissionId,
-        uint256 indexed imageIndex,
-        address indexed ngoWallet,
-        string ipfsHash,
-        string latitude,
-        string longitude,
-        uint256 credits,
-        address admin,
-        uint256 timestamp
-    );
-    event ImageRejected(
-        uint256 indexed submissionId,
-        uint256 indexed imageIndex,
-        address indexed ngoWallet,
-        string ipfsHash,
-        string reason,
-        address admin,
-        uint256 timestamp
-    );
-
-    event VideoApproved(
-        uint256 indexed submissionId,
-        uint256 indexed videoIndex,
-        address indexed ngoWallet,
-        string ipfsHash,
-        string latitude,
-        string longitude,
-        uint256 credits,
-        address admin,
-        uint256 timestamp
-    );
-    event VideoRejected(
-        uint256 indexed submissionId,
-        uint256 indexed videoIndex,
-        address indexed ngoWallet,
-        string ipfsHash,
-        string reason,
-        address admin,
-        uint256 timestamp
-    );
-
-    event SubmissionApproved(uint256 submissionId, address ngoWallet, uint256 credits);
+    event ImageApproved(uint256 indexed submissionId, uint256 indexed imageIndex, address indexed ngoWallet, string ipfsHash, string latitude, string longitude, uint256 credits, uint256 tokenAmount, address admin, uint256 timestamp);
+    event ImageRejected(uint256 indexed submissionId, uint256 indexed imageIndex, address indexed ngoWallet, string ipfsHash, string reason, address admin, uint256 timestamp);
+    event VideoApproved(uint256 indexed submissionId, uint256 indexed videoIndex, address indexed ngoWallet, string ipfsHash, string latitude, string longitude, uint256 credits, uint256 tokenAmount, address admin, uint256 timestamp);
+    event VideoRejected(uint256 indexed submissionId, uint256 indexed videoIndex, address indexed ngoWallet, string ipfsHash, string reason, address admin, uint256 timestamp);
+    event SubmissionApproved(uint256 submissionId, address ngoWallet, uint256 credits, uint256 tokenAmount);
     event SubmissionRejected(uint256 submissionId, address ngoWallet);
 
     // ------------------------------------
@@ -135,8 +101,9 @@ contract BlueCarbon {
     // ------------------------------------
     // CONSTRUCTOR
     // ------------------------------------
-    constructor() {
-        isAdmin[msg.sender] = true; // deployer becomes first admin
+    constructor(address _tokenAddress) {
+        token = IERC20(_tokenAddress);
+        isAdmin[msg.sender] = true;
         emit AdminAdded(msg.sender);
     }
 
@@ -153,7 +120,9 @@ contract BlueCarbon {
         emit AdminRemoved(_admin);
     }
 
-    // ---- IMAGE APPROVAL ----
+    // ------------------------------------
+    // IMAGE APPROVAL
+    // ------------------------------------
     function approveImage(uint256 _submissionId, uint256 _imageIndex, uint256 _credits)
         external onlyAdmin submissionExists(_submissionId)
     {
@@ -164,7 +133,7 @@ contract BlueCarbon {
         require(keccak256(bytes(img.status)) != keccak256(bytes("verified")), "Image already verified");
 
         bytes32 key = keccak256(abi.encodePacked(img.ipfsHash));
-        require(!approvedImageKey[key], "Duplicate image (ipfs)");
+        require(!approvedImageKey[key], "Duplicate image");
         require(!approvedIpfsHash[img.ipfsHash], "Duplicate ipfsHash");
 
         img.status = "verified";
@@ -176,26 +145,17 @@ contract BlueCarbon {
         approvedIpfsHash[img.ipfsHash] = true;
 
         carbonCredits[submission.ngoWallet] += _credits;
+        uint256 tokenAmount = _credits * tokenPerCredit;
+        require(token.balanceOf(address(this)) >= tokenAmount, "Insufficient tokens in contract");
+        token.transfer(submission.ngoWallet, tokenAmount);
 
-        emit ImageApproved(
-            _submissionId,
-            _imageIndex,
-            submission.ngoWallet,
-            img.ipfsHash,
-            img.latitude,
-            img.longitude,
-            _credits,
-            msg.sender,
-            block.timestamp
-        );
+        emit ImageApproved(_submissionId, _imageIndex, submission.ngoWallet, img.ipfsHash, img.latitude, img.longitude, _credits, tokenAmount, msg.sender, block.timestamp);
     }
 
     function rejectImage(uint256 _submissionId, uint256 _imageIndex, string memory _reason)
         external onlyAdmin submissionExists(_submissionId)
     {
         PlantingSubmission storage submission = submissions[_submissionId];
-        require(_imageIndex < submission.images.length, "Image index OOB");
-
         Image storage img = submission.images[_imageIndex];
         require(keccak256(bytes(img.status)) != keccak256(bytes("verified")), "Image already verified");
 
@@ -204,29 +164,21 @@ contract BlueCarbon {
         img.approvedBy = msg.sender;
         img.approvedAt = block.timestamp;
 
-        emit ImageRejected(
-            _submissionId,
-            _imageIndex,
-            submission.ngoWallet,
-            img.ipfsHash,
-            _reason,
-            msg.sender,
-            block.timestamp
-        );
+        emit ImageRejected(_submissionId, _imageIndex, submission.ngoWallet, img.ipfsHash, _reason, msg.sender, block.timestamp);
     }
 
-    // ---- VIDEO APPROVAL ----
+    // ------------------------------------
+    // VIDEO APPROVAL
+    // ------------------------------------
     function approveVideo(uint256 _submissionId, uint256 _videoIndex, uint256 _credits)
         external onlyAdmin submissionExists(_submissionId)
     {
         PlantingSubmission storage submission = submissions[_submissionId];
-        require(_videoIndex < submission.videos.length, "Video index OOB");
-
         Video storage vid = submission.videos[_videoIndex];
         require(keccak256(bytes(vid.status)) != keccak256(bytes("verified")), "Video already verified");
 
         bytes32 key = keccak256(abi.encodePacked(vid.ipfsHash));
-        require(!approvedVideoKey[key], "Duplicate video (ipfs)");
+        require(!approvedVideoKey[key], "Duplicate video");
         require(!approvedVideoIpfs[vid.ipfsHash], "Duplicate ipfsHash");
 
         vid.status = "verified";
@@ -238,26 +190,17 @@ contract BlueCarbon {
         approvedVideoIpfs[vid.ipfsHash] = true;
 
         carbonCredits[submission.ngoWallet] += _credits;
+        uint256 tokenAmount = _credits * tokenPerCredit;
+        require(token.balanceOf(address(this)) >= tokenAmount, "Insufficient tokens in contract");
+        token.transfer(submission.ngoWallet, tokenAmount);
 
-        emit VideoApproved(
-            _submissionId,
-            _videoIndex,
-            submission.ngoWallet,
-            vid.ipfsHash,
-            vid.latitude,
-            vid.longitude,
-            _credits,
-            msg.sender,
-            block.timestamp
-        );
+        emit VideoApproved(_submissionId, _videoIndex, submission.ngoWallet, vid.ipfsHash, vid.latitude, vid.longitude, _credits, tokenAmount, msg.sender, block.timestamp);
     }
 
     function rejectVideo(uint256 _submissionId, uint256 _videoIndex, string memory _reason)
         external onlyAdmin submissionExists(_submissionId)
     {
         PlantingSubmission storage submission = submissions[_submissionId];
-        require(_videoIndex < submission.videos.length, "Video index OOB");
-
         Video storage vid = submission.videos[_videoIndex];
         require(keccak256(bytes(vid.status)) != keccak256(bytes("verified")), "Video already verified");
 
@@ -266,28 +209,24 @@ contract BlueCarbon {
         vid.approvedBy = msg.sender;
         vid.approvedAt = block.timestamp;
 
-        emit VideoRejected(
-            _submissionId,
-            _videoIndex,
-            submission.ngoWallet,
-            vid.ipfsHash,
-            _reason,
-            msg.sender,
-            block.timestamp
-        );
+        emit VideoRejected(_submissionId, _videoIndex, submission.ngoWallet, vid.ipfsHash, _reason, msg.sender, block.timestamp);
     }
 
-    // ---- SUBMISSION STATUS ----
+    // ------------------------------------
+    // SUBMISSION APPROVAL
+    // ------------------------------------
     function approveSubmission(uint256 _submissionId) external onlyAdmin submissionExists(_submissionId) {
         PlantingSubmission storage submission = submissions[_submissionId];
         require(keccak256(bytes(submission.status)) != keccak256(bytes("approved")), "Already approved");
 
         uint256 totalCredits = 0;
+
         for (uint i = 0; i < submission.images.length; i++) {
             if (keccak256(bytes(submission.images[i].status)) == keccak256(bytes("verified"))) {
                 totalCredits += submission.images[i].credits;
             }
         }
+
         for (uint j = 0; j < submission.videos.length; j++) {
             if (keccak256(bytes(submission.videos[j].status)) == keccak256(bytes("verified"))) {
                 totalCredits += submission.videos[j].credits;
@@ -297,13 +236,15 @@ contract BlueCarbon {
         submission.status = "approved";
         carbonCredits[submission.ngoWallet] += totalCredits;
 
-        emit SubmissionApproved(_submissionId, submission.ngoWallet, totalCredits);
+        uint256 tokenAmount = totalCredits * tokenPerCredit;
+        require(token.balanceOf(address(this)) >= tokenAmount, "Insufficient tokens in contract");
+        token.transfer(submission.ngoWallet, tokenAmount);
+
+        emit SubmissionApproved(_submissionId, submission.ngoWallet, totalCredits, tokenAmount);
     }
 
     function rejectSubmission(uint256 _submissionId) external onlyAdmin submissionExists(_submissionId) {
         PlantingSubmission storage submission = submissions[_submissionId];
-        require(keccak256(bytes(submission.status)) != keccak256(bytes("approved")), "Already approved");
-
         submission.status = "rejected";
 
         emit SubmissionRejected(_submissionId, submission.ngoWallet);
@@ -312,23 +253,11 @@ contract BlueCarbon {
     // ------------------------------------
     // USER FUNCTIONS
     // ------------------------------------
-    function submitProject(
-        string memory ngoName,
-        string memory ngoEmail,
-        string memory title,
-        string[] memory ipfsHashes,
-        string[] memory latitudes,
-        string[] memory longitudes
-    ) external {
-        require(
-            ipfsHashes.length == latitudes.length &&
-            latitudes.length == longitudes.length,
-            "Array length mismatch"
-        );
+    function submitProject(string memory ngoName, string memory ngoEmail, string memory title, string[] memory ipfsHashes, string[] memory latitudes, string[] memory longitudes) external {
+        require(ipfsHashes.length == latitudes.length && latitudes.length == longitudes.length, "Array length mismatch");
 
         submissionCount++;
         PlantingSubmission storage submission = submissions[submissionCount];
-
         submission.ngoWallet = msg.sender;
         submission.ngoName = ngoName;
         submission.ngoEmail = ngoEmail;
@@ -338,17 +267,7 @@ contract BlueCarbon {
         submission.exists = true;
 
         for (uint i = 0; i < ipfsHashes.length; i++) {
-            submission.images.push(Image({
-                ipfsHash: ipfsHashes[i],
-                latitude: latitudes[i],
-                longitude: longitudes[i],
-                timestamp: block.timestamp,
-                status: "pending",
-                reason: "",
-                credits: 0,
-                approvedBy: address(0),
-                approvedAt: 0
-            }));
+            submission.images.push(Image(ipfsHashes[i], latitudes[i], longitudes[i], block.timestamp, "pending", "", 0, address(0), 0));
         }
 
         ngoSubmissions[msg.sender].push(submissionCount);
@@ -374,18 +293,8 @@ contract BlueCarbon {
         string[] memory videoLongitudes,
         uint256[] memory videoTimestamps
     ) external {
-        require(
-            imageHashes.length == imageLatitudes.length &&
-            imageLatitudes.length == imageLongitudes.length &&
-            imageLongitudes.length == imageTimestamps.length,
-            "Image array length mismatch"
-        );
-        require(
-            videoHashes.length == videoLatitudes.length &&
-            videoLatitudes.length == videoLongitudes.length &&
-            videoLongitudes.length == videoTimestamps.length,
-            "Video array length mismatch"
-        );
+        require(imageHashes.length == imageLatitudes.length && imageLatitudes.length == imageLongitudes.length && imageLongitudes.length == imageTimestamps.length, "Image array mismatch");
+        require(videoHashes.length == videoLatitudes.length && videoLatitudes.length == videoLongitudes.length && videoLongitudes.length == videoTimestamps.length, "Video array mismatch");
 
         submissionCount++;
         PlantingSubmission storage submission = submissions[submissionCount];
@@ -405,31 +314,10 @@ contract BlueCarbon {
         submission.exists = true;
 
         for (uint i = 0; i < imageHashes.length; i++) {
-            submission.images.push(Image({
-                ipfsHash: imageHashes[i],
-                latitude: imageLatitudes[i],
-                longitude: imageLongitudes[i],
-                timestamp: imageTimestamps[i],
-                status: "pending",
-                reason: "",
-                credits: 0,
-                approvedBy: address(0),
-                approvedAt: 0
-            }));
+            submission.images.push(Image(imageHashes[i], imageLatitudes[i], imageLongitudes[i], imageTimestamps[i], "pending", "", 0, address(0), 0));
         }
-
         for (uint j = 0; j < videoHashes.length; j++) {
-            submission.videos.push(Video({
-                ipfsHash: videoHashes[j],
-                latitude: videoLatitudes[j],
-                longitude: videoLongitudes[j],
-                timestamp: videoTimestamps[j],
-                status: "pending",
-                reason: "",
-                credits: 0,
-                approvedBy: address(0),
-                approvedAt: 0
-            }));
+            submission.videos.push(Video(videoHashes[j], videoLatitudes[j], videoLongitudes[j], videoTimestamps[j], "pending", "", 0, address(0), 0));
         }
 
         ngoSubmissions[msg.sender].push(submissionCount);
@@ -439,54 +327,12 @@ contract BlueCarbon {
     // ------------------------------------
     // VIEW FUNCTIONS
     // ------------------------------------
-    function getImage(uint256 submissionId, uint256 index) external view returns (
-        string memory ipfsHash,
-        string memory latitude,
-        string memory longitude,
-        uint256 timestamp,
-        string memory status,
-        string memory reason,
-        uint256 credits,
-        address approvedBy,
-        uint256 approvedAt
-    ) {
-        Image storage img = submissions[submissionId].images[index];
-        return (
-            img.ipfsHash,
-            img.latitude,
-            img.longitude,
-            img.timestamp,
-            img.status,
-            img.reason,
-            img.credits,
-            img.approvedBy,
-            img.approvedAt
-        );
+    function getImage(uint256 submissionId, uint256 index) external view returns (Image memory) {
+        return submissions[submissionId].images[index];
     }
 
-    function getVideo(uint256 submissionId, uint256 index) external view returns (
-        string memory ipfsHash,
-        string memory latitude,
-        string memory longitude,
-        uint256 timestamp,
-        string memory status,
-        string memory reason,
-        uint256 credits,
-        address approvedBy,
-        uint256 approvedAt
-    ) {
-        Video storage vid = submissions[submissionId].videos[index];
-        return (
-            vid.ipfsHash,
-            vid.latitude,
-            vid.longitude,
-            vid.timestamp,
-            vid.status,
-            vid.reason,
-            vid.credits,
-            vid.approvedBy,
-            vid.approvedAt
-        );
+    function getVideo(uint256 submissionId, uint256 index) external view returns (Video memory) {
+        return submissions[submissionId].videos[index];
     }
 
     function getImagesCount(uint256 submissionId) external view returns(uint256) {

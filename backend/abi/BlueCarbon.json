@@ -1,11 +1,16 @@
 {
-  "address": "0xfbD87f168959ca668f8C84bbf05129234C2446EA",
+  "address": "0xb3163162D50486928baCF3B35802CD93F89E2F83",
   "abi": [
     {
       "type": "constructor",
       "stateMutability": "undefined",
       "payable": false,
-      "inputs": []
+      "inputs": [
+        {
+          "type": "address",
+          "name": "_tokenAddress"
+        }
+      ]
     },
     {
       "type": "event",
@@ -69,6 +74,11 @@
         {
           "type": "uint256",
           "name": "credits",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "tokenAmount",
           "indexed": false
         },
         {
@@ -161,6 +171,11 @@
           "type": "uint256",
           "name": "credits",
           "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "tokenAmount",
+          "indexed": false
         }
       ]
     },
@@ -236,6 +251,11 @@
         {
           "type": "uint256",
           "name": "credits",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "tokenAmount",
           "indexed": false
         },
         {
@@ -492,40 +512,46 @@
       ],
       "outputs": [
         {
-          "type": "string",
-          "name": "ipfsHash"
-        },
-        {
-          "type": "string",
-          "name": "latitude"
-        },
-        {
-          "type": "string",
-          "name": "longitude"
-        },
-        {
-          "type": "uint256",
-          "name": "timestamp"
-        },
-        {
-          "type": "string",
-          "name": "status"
-        },
-        {
-          "type": "string",
-          "name": "reason"
-        },
-        {
-          "type": "uint256",
-          "name": "credits"
-        },
-        {
-          "type": "address",
-          "name": "approvedBy"
-        },
-        {
-          "type": "uint256",
-          "name": "approvedAt"
+          "type": "tuple",
+          "name": "",
+          "components": [
+            {
+              "type": "string",
+              "name": "ipfsHash"
+            },
+            {
+              "type": "string",
+              "name": "latitude"
+            },
+            {
+              "type": "string",
+              "name": "longitude"
+            },
+            {
+              "type": "uint256",
+              "name": "timestamp"
+            },
+            {
+              "type": "string",
+              "name": "status"
+            },
+            {
+              "type": "string",
+              "name": "reason"
+            },
+            {
+              "type": "uint256",
+              "name": "credits"
+            },
+            {
+              "type": "address",
+              "name": "approvedBy"
+            },
+            {
+              "type": "uint256",
+              "name": "approvedAt"
+            }
+          ]
         }
       ]
     },
@@ -585,40 +611,46 @@
       ],
       "outputs": [
         {
-          "type": "string",
-          "name": "ipfsHash"
-        },
-        {
-          "type": "string",
-          "name": "latitude"
-        },
-        {
-          "type": "string",
-          "name": "longitude"
-        },
-        {
-          "type": "uint256",
-          "name": "timestamp"
-        },
-        {
-          "type": "string",
-          "name": "status"
-        },
-        {
-          "type": "string",
-          "name": "reason"
-        },
-        {
-          "type": "uint256",
-          "name": "credits"
-        },
-        {
-          "type": "address",
-          "name": "approvedBy"
-        },
-        {
-          "type": "uint256",
-          "name": "approvedAt"
+          "type": "tuple",
+          "name": "",
+          "components": [
+            {
+              "type": "string",
+              "name": "ipfsHash"
+            },
+            {
+              "type": "string",
+              "name": "latitude"
+            },
+            {
+              "type": "string",
+              "name": "longitude"
+            },
+            {
+              "type": "uint256",
+              "name": "timestamp"
+            },
+            {
+              "type": "string",
+              "name": "status"
+            },
+            {
+              "type": "string",
+              "name": "reason"
+            },
+            {
+              "type": "uint256",
+              "name": "credits"
+            },
+            {
+              "type": "address",
+              "name": "approvedBy"
+            },
+            {
+              "type": "uint256",
+              "name": "approvedAt"
+            }
+          ]
         }
       ]
     },
@@ -941,6 +973,34 @@
         }
       ],
       "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "token",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "tokenPerCredit",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
     }
   ]
 }
