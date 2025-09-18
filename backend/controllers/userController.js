@@ -8,6 +8,8 @@ import projectModel from "../models/projectModel.js";
 import imageModel from "../models/imageModel.js";
 import { blueCarbonContract } from "../config/blockchain.js";
 import SubmissionModel from "../models/submissionModel.js";
+import Transaction from "../models/transactionModel.js";
+import Image from "../models/imageModel.js";
 
 // Register User
 const registerUser = async (req, res) => {
@@ -261,24 +263,22 @@ const submitProject = async (req, res) => {
 // Dashboard
 const getNgoDashboardData = async (req, res) => {
   try {
-    // ✅ extract NGO userId from body (set by userAuth)
     const userId = req.userId;
-
     if (!userId) {
       return res
         .status(400)
         .json({ success: false, message: "User ID missing" });
     }
 
-    // ✅ Find user and populate projects → project + images
+    // ✅ Find NGO user + populate projects
     const user = await userModel
       .findById(userId)
       .select("-password")
       .populate({
         path: "projects",
         populate: [
-          { path: "project" }, // linked project details
-          { path: "images" }, // linked images
+          { path: "project" }, // Project details
+          { path: "images" }, // Images inside project
         ],
       });
 
@@ -289,11 +289,29 @@ const getNgoDashboardData = async (req, res) => {
     }
 
     const projects = user.projects || [];
+
     let totalCredits = 0;
     let verified = 0;
     let rejected = 0;
     let pending = 0;
 
+    // 🟢 Collect all projectIds
+    const projectIds = projects.map((proj) => proj.project?._id);
+
+    // 🟢 Fetch related transactions for all projects
+    const transactions = await Transaction.find({
+      projectId: { $in: projectIds },
+      status: "success",
+    }).select("txHash credits projectId imageId createdAt");
+
+    // 🟢 Group transactions by imageId
+    const txByImage = {};
+    transactions.forEach((tx) => {
+      if (!txByImage[tx.imageId]) txByImage[tx.imageId] = [];
+      txByImage[tx.imageId].push(tx);
+    });
+
+    // 🟢 Calculate stats + attach transactions
     projects.forEach((proj) => {
       proj.images.forEach((img) => {
         if (img.status === "verified") {
@@ -304,6 +322,9 @@ const getNgoDashboardData = async (req, res) => {
         } else {
           pending++;
         }
+
+        // ✅ Attach transactions even for rejected/pending
+        img._doc.transactions = txByImage[img._id] || [];
       });
     });
 
@@ -330,6 +351,56 @@ const getNgoDashboardData = async (req, res) => {
     });
   } catch (error) {
     console.error("Dashboard error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getTransactionByImage = async (req, res) => {
+  try {
+    const { imageId } = req.body;
+
+    if (!imageId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Image ID is required" });
+    }
+
+    // 1️⃣ Find the image and check status
+    const image = await Image.findById(imageId).select("status");
+    if (!image) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Image not found" });
+    }
+
+    // 2️⃣ If image is pending, return empty
+    if (image.status === "pending") {
+      return res.json({
+        success: true,
+        transactions: [],
+        message: "No transactions for pending image",
+      });
+    }
+
+    // 3️⃣ Fetch transactions for approved or rejected image
+    const transactions = await Transaction.find({
+      imageId,
+      status: { $in: ["success", "rejected"] }, // only approved/rejected
+    })
+      .select("txHash status credits createdAt")
+      .sort({ createdAt: -1 }); // latest first
+
+    // 4️⃣ Return only required fields
+    const txData = transactions.map((tx) => ({
+      txHash: tx.txHash,
+      status: tx.status,
+      credits: tx.credits,
+      timestamp: tx.createdAt,
+    }));
+
+    return res.json({ success: true, transactions: txData });
+  } catch (error) {
+    console.error("Transaction fetch error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -368,4 +439,5 @@ export {
   submitProject,
   getNgoDashboardData,
   getUserProfile,
+  getTransactionByImage,
 };

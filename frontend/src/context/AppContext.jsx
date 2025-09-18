@@ -28,6 +28,23 @@ export const AppProvider = ({ children }) => {
     navigate("/login"); // redirect back to login page
   };
 
+  // inside AppContext
+  const getImageTransactions = async (imageId) => {
+    if (!token) return [];
+    try {
+      const { data } = await axios.post(
+        "/api/user/imageTx",
+        { imageId },
+        { headers: { token } }
+      );
+      if (data.success) return data.transactions || [];
+      return [];
+    } catch (err) {
+      console.error("Image transactions fetch error:", err);
+      return [];
+    }
+  };
+
   const dashboardData = async () => {
     if (!token) {
       toast.error("No authentication token found. Please log in.");
@@ -67,6 +84,7 @@ export const AppProvider = ({ children }) => {
     dashboardData,
     logout,
     loading,
+    getImageTransactions,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

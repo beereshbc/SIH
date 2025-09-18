@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getNgoDashboardData,
+  getTransactionByImage,
   getUserProfile,
   loginUser,
   registerUser,
@@ -15,5 +16,6 @@ userRouter.post("/login", loginUser);
 userRouter.post("/projects", submitProject);
 userRouter.post("/dashData", userAuth, getNgoDashboardData);
 userRouter.get("/profile", userAuth, getUserProfile);
+userRouter.post("/imageTx", userAuth, getTransactionByImage);
 
 export default userRouter;
