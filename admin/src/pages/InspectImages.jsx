@@ -4,12 +4,13 @@ import { CheckCircle, XCircle, Hash, MapPin, Copy } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { useAppContext } from "../context/AppContext";
+import EcoLoader from "../components/EcoLoader";
 
 const InspectMedia = ({ ngo, fetchImages }) => {
   const [inputs, setInputs] = useState({});
   const [activeAction, setActiveAction] = useState({});
   const [loading, setLoading] = useState(false);
-  const { atoken, adminWallet } = useAppContext();
+  const { atoken } = useAppContext();
   const [bulkApproved, setBulkApproved] = useState(false);
 
   // Copy IPFS hash
@@ -23,6 +24,7 @@ const InspectMedia = ({ ngo, fetchImages }) => {
     const credits = inputs[media._id];
     if (!credits || isNaN(credits)) return toast.error("Enter valid credits");
 
+    setLoading(true);
     try {
       const { data } = await axios.post(
         "/api/admin/images/approve",
@@ -30,22 +32,27 @@ const InspectMedia = ({ ngo, fetchImages }) => {
         { headers: { atoken } }
       );
 
-      if (data.success)
+      if (data.success) {
         toast.success(
           `Approved ${media.type} with ${credits} credits! Tx: ${data.txHash}`
         );
-      else toast.error(data.message || "Approval failed");
+      } else toast.error(data.message || "Approval failed");
 
+      // Refresh images
       fetchImages?.();
-      setActiveAction({ ...activeAction, [media._id]: null });
+
+      // Reset input & action
+      setActiveAction((prev) => ({ ...prev, [media._id]: null }));
+      setInputs((prev) => ({ ...prev, [media._id]: "" }));
     } catch (err) {
       toast.error(
         err.response?.data?.message || err.message || "Approval failed"
       );
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Reject single image/video
   // Reject single image/video
   const handleRejectSingle = async (media) => {
     const reason = inputs[`reason-${media._id}`];
@@ -67,13 +74,11 @@ const InspectMedia = ({ ngo, fetchImages }) => {
           `${media.type} rejected! Reason: ${reason} | Tx: ${data.txHash}`
         );
 
-        // Immediately refresh the list
+        // Refresh images
         fetchImages?.();
 
-        // Reset UI action for this media
+        // Reset input & action
         setActiveAction((prev) => ({ ...prev, [media._id]: null }));
-
-        // Clear input field for reason
         setInputs((prev) => ({ ...prev, [`reason-${media._id}`]: "" }));
       } else {
         toast.error(data.msg || "Rejection failed");
@@ -129,7 +134,14 @@ const InspectMedia = ({ ngo, fetchImages }) => {
   }, [ngo]);
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="relative flex flex-col gap-6 p-4">
+      {/* Loader overlay */}
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <EcoLoader />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {ngo?.images?.map((media) => (
           <motion.div

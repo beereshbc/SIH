@@ -51,7 +51,7 @@ const Header = () => {
         transition={{ duration: 1, ease: "easeOut" }}
       >
         <h2 className="text-3xl md:text-4xl text-p1 font-bold italic tracking-wide drop-shadow-lg playfont">
-          BlueGreen
+          BlueCarbon
         </h2>
         <p className="text-p1 text-sm md:text-base italic playfont">
           Restoring Nature with Blockchain Transparency

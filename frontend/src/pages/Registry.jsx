@@ -518,8 +518,54 @@ export default function Registry() {
         );
 
         let count = 0;
+        let unwantedDetected = false;
+
         for (let i = 0; i < contours.size(); i++) {
-          if (cv.contourArea(contours.get(i)) > 200) count++;
+          if (cv.contourArea(contours.get(i)) > 200) {
+            // Get bounding rect for this contour
+            let rect = cv.boundingRect(contours.get(i));
+            let roi = src.roi(rect);
+
+            // Convert ROI to HSV for color filtering
+            let hsv = new cv.Mat();
+            cv.cvtColor(roi, hsv, cv.COLOR_RGBA2RGB);
+            cv.cvtColor(hsv, hsv, cv.COLOR_RGB2HSV);
+
+            // Define green color range
+            let lowGreen = new cv.Mat(
+              hsv.rows,
+              hsv.cols,
+              hsv.type(),
+              [35, 40, 40, 0]
+            );
+            let highGreen = new cv.Mat(
+              hsv.rows,
+              hsv.cols,
+              hsv.type(),
+              [85, 255, 255, 255]
+            );
+            let mask = new cv.Mat();
+            cv.inRange(hsv, lowGreen, highGreen, mask);
+
+            // Calculate % of green pixels
+            let greenPixels = cv.countNonZero(mask);
+            let totalPixels = roi.rows * roi.cols;
+            let greenRatio = greenPixels / totalPixels;
+
+            if (greenRatio > 0.3) {
+              // Mostly green → assume plant
+              count++;
+            } else {
+              // Not green enough → unwanted object
+              unwantedDetected = true;
+            }
+
+            roi.delete();
+            hsv.delete();
+            lowGreen.delete();
+            highGreen.delete();
+            mask.delete();
+          }
         }
 
         src.delete();
@@ -528,6 +574,10 @@ export default function Registry() {
         thresh.delete();
         contours.delete();
         hierarchy.delete();
+
+        if (unwantedDetected) {
+          toast.custom("⚠️ Unwanted object found!");
+        }
 
         resolve(count);
       };

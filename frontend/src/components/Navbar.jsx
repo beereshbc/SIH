@@ -108,7 +108,7 @@ const Navbar = () => {
         <div className="flex items-center gap-2 cursor-pointer">
           <Leaf className="text-emerald-300 drop-shadow-lg" size={22} />
           <span className="italic font-extrabold text-xl md:text-2xl tracking-wide text-green-100 drop-shadow">
-            BlueGreen
+            BlueCarbon
           </span>
         </div>
 

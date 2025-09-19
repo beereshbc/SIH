@@ -152,20 +152,36 @@ contract BlueCarbon {
         emit ImageApproved(_submissionId, _imageIndex, submission.ngoWallet, img.ipfsHash, img.latitude, img.longitude, _credits, tokenAmount, msg.sender, block.timestamp);
     }
 
-    function rejectImage(uint256 _submissionId, uint256 _imageIndex, string memory _reason)
-        external onlyAdmin submissionExists(_submissionId)
-    {
-        PlantingSubmission storage submission = submissions[_submissionId];
-        Image storage img = submission.images[_imageIndex];
-        require(keccak256(bytes(img.status)) != keccak256(bytes("verified")), "Image already verified");
+function rejectImage(uint256 _submissionId, uint256 _imageIndex, string memory _reason)
+    external onlyAdmin submissionExists(_submissionId)
+{
+    PlantingSubmission storage submission = submissions[_submissionId];
+    Image storage img = submission.images[_imageIndex];
 
-        img.status = "rejected";
-        img.reason = _reason;
-        img.approvedBy = msg.sender;
-        img.approvedAt = block.timestamp;
+    // Optional: store previous status
+    string memory prevStatus = img.status;
 
-        emit ImageRejected(_submissionId, _imageIndex, submission.ngoWallet, img.ipfsHash, _reason, msg.sender, block.timestamp);
+    // Update status to rejected
+    img.status = "rejected";
+    img.reason = _reason;
+    img.approvedBy = msg.sender;
+    img.approvedAt = block.timestamp;
+
+    emit ImageRejected(
+        _submissionId,
+        _imageIndex,
+        submission.ngoWallet,
+        img.ipfsHash,
+        _reason,
+        msg.sender,
+        block.timestamp
+    );
+
+    // Optionally, log if it was previously verified
+    if (keccak256(bytes(prevStatus)) == keccak256(bytes("verified"))) {
+        // For off-chain tracking, front-end or event logs can use this
     }
+}
 
     // ------------------------------------
     // VIDEO APPROVAL
@@ -197,20 +213,25 @@ contract BlueCarbon {
         emit VideoApproved(_submissionId, _videoIndex, submission.ngoWallet, vid.ipfsHash, vid.latitude, vid.longitude, _credits, tokenAmount, msg.sender, block.timestamp);
     }
 
-    function rejectVideo(uint256 _submissionId, uint256 _videoIndex, string memory _reason)
-        external onlyAdmin submissionExists(_submissionId)
-    {
-        PlantingSubmission storage submission = submissions[_submissionId];
-        Video storage vid = submission.videos[_videoIndex];
-        require(keccak256(bytes(vid.status)) != keccak256(bytes("verified")), "Video already verified");
+ function rejectVideo(uint256 _submissionId, uint256 _videoIndex, string memory _reason)
+    external onlyAdmin submissionExists(_submissionId)
+{
+    PlantingSubmission storage submission = submissions[_submissionId];
+    Video storage vid = submission.videos[_videoIndex];
 
-        vid.status = "rejected";
-        vid.reason = _reason;
-        vid.approvedBy = msg.sender;
-        vid.approvedAt = block.timestamp;
+    string memory prevStatus = vid.status;
 
-        emit VideoRejected(_submissionId, _videoIndex, submission.ngoWallet, vid.ipfsHash, _reason, msg.sender, block.timestamp);
-    }
+    vid.status = "rejected";
+    vid.reason = _reason;
+    vid.approvedBy = msg.sender;
+    vid.approvedAt = block.timestamp;
+
+    emit VideoRejected(_submissionId, _videoIndex, submission.ngoWallet, vid.ipfsHash, _reason, msg.sender, block.timestamp);
+
+    // Optional: track previous status if needed
+    if (keccak256(bytes(prevStatus)) == keccak256(bytes("verified"))) {}
+}
+
 
     // ------------------------------------
     // SUBMISSION APPROVAL
