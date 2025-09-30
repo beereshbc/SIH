@@ -111,7 +111,7 @@ const InspectMedia = ({ ngo, fetchImages }) => {
 
         const { data } = await axios.post(
           "/api/admin/projects/approve-onchain",
-          { projectId: ngo._id, creditsPerMedia },
+          { projectId: ngo._id },
           { headers: { atoken } }
         );
 

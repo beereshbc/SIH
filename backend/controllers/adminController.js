@@ -335,7 +335,7 @@ const approveImageController = async (req, res) => {
 // Bulk Approve NGO Project (Fixed)
 const approveNgoProjectOnChain = async (req, res) => {
   try {
-    const { projectId, creditsPerImage } = req.body;
+    const { projectId } = req.body;
     const adminId = req.adminId;
 
     if (!blueCarbonContract) {
@@ -361,42 +361,6 @@ const approveNgoProjectOnChain = async (req, res) => {
     const contractWithSigner = blueCarbonContract.connect(wallet);
     let totalCredits = 0;
     const txHashes = [];
-
-    for (let i = 0; i < (ngoProject.images || []).length; i++) {
-      const img = ngoProject.images[i];
-      if (img.status === "verified") continue;
-
-      if (img.onChainIndex == null) img.onChainIndex = i;
-      const credits = Array.isArray(creditsPerImage)
-        ? Number(creditsPerImage[i] || 0)
-        : Number(creditsPerImage || 10);
-      if (credits <= 0) continue;
-
-      try {
-        const tx = await contractWithSigner.approveImage(
-          ngoProject.submissionIdOnChain,
-          img.onChainIndex,
-          credits
-        );
-        const receipt = await tx.wait();
-
-        img.status = "verified";
-        img.carbonCredits = credits;
-        img.approvedAt = new Date();
-        img.approvedByAdminId = adminId;
-        img.approvedByAdminWallet = wallet.address;
-        img.txHash = receipt.transactionHash;
-        await img.save();
-
-        totalCredits += credits;
-        txHashes.push(receipt.transactionHash);
-      } catch (txErr) {
-        console.error(
-          `Transaction failed for image ${img._id}:`,
-          txErr.message
-        );
-      }
-    }
 
     if (totalCredits > 0) {
       ngoProject.totalCarbonCredits =

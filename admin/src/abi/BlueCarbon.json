@@ -1,5 +1,5 @@
 {
-  "address": "0x4f8b6194142195dCF4ce7ddD3c8388889CEa96b6",
+  "address": "0x9ab3530D1637d49e4D1696b7be19F76878bE9D69",
   "abi": [
     {
       "type": "constructor",
@@ -155,33 +155,6 @@
     {
       "type": "event",
       "anonymous": false,
-      "name": "SubmissionApproved",
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": "submissionId",
-          "indexed": false
-        },
-        {
-          "type": "address",
-          "name": "ngoWallet",
-          "indexed": false
-        },
-        {
-          "type": "uint256",
-          "name": "credits",
-          "indexed": false
-        },
-        {
-          "type": "uint256",
-          "name": "tokenAmount",
-          "indexed": false
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "anonymous": false,
       "name": "SubmissionCreated",
       "inputs": [
         {
@@ -193,23 +166,6 @@
           "type": "address",
           "name": "ngoWallet",
           "indexed": true
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "anonymous": false,
-      "name": "SubmissionRejected",
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": "submissionId",
-          "indexed": false
-        },
-        {
-          "type": "address",
-          "name": "ngoWallet",
-          "indexed": false
         }
       ]
     },
@@ -342,19 +298,6 @@
         {
           "type": "uint256",
           "name": "_credits"
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "type": "function",
-      "name": "approveSubmission",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": "_submissionId"
         }
       ],
       "outputs": []
@@ -732,19 +675,6 @@
         {
           "type": "string",
           "name": "_reason"
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "type": "function",
-      "name": "rejectSubmission",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": "_submissionId"
         }
       ],
       "outputs": []

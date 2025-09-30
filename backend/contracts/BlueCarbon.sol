@@ -78,12 +78,48 @@ contract BlueCarbon {
     event AdminRemoved(address indexed admin);
     event SubmissionCreated(uint256 indexed submissionId, address indexed ngoWallet);
     event ProjectSubmitted(uint256 submissionId, string ngoEmail);
-    event ImageApproved(uint256 indexed submissionId, uint256 indexed imageIndex, address indexed ngoWallet, string ipfsHash, string latitude, string longitude, uint256 credits, uint256 tokenAmount, address admin, uint256 timestamp);
-    event ImageRejected(uint256 indexed submissionId, uint256 indexed imageIndex, address indexed ngoWallet, string ipfsHash, string reason, address admin, uint256 timestamp);
-    event VideoApproved(uint256 indexed submissionId, uint256 indexed videoIndex, address indexed ngoWallet, string ipfsHash, string latitude, string longitude, uint256 credits, uint256 tokenAmount, address admin, uint256 timestamp);
-    event VideoRejected(uint256 indexed submissionId, uint256 indexed videoIndex, address indexed ngoWallet, string ipfsHash, string reason, address admin, uint256 timestamp);
-    event SubmissionApproved(uint256 submissionId, address ngoWallet, uint256 credits, uint256 tokenAmount);
-    event SubmissionRejected(uint256 submissionId, address ngoWallet);
+    event ImageApproved(
+        uint256 indexed submissionId,
+        uint256 indexed imageIndex,
+        address indexed ngoWallet,
+        string ipfsHash,
+        string latitude,
+        string longitude,
+        uint256 credits,
+        uint256 tokenAmount,
+        address admin,
+        uint256 timestamp
+    );
+    event ImageRejected(
+        uint256 indexed submissionId,
+        uint256 indexed imageIndex,
+        address indexed ngoWallet,
+        string ipfsHash,
+        string reason,
+        address admin,
+        uint256 timestamp
+    );
+    event VideoApproved(
+        uint256 indexed submissionId,
+        uint256 indexed videoIndex,
+        address indexed ngoWallet,
+        string ipfsHash,
+        string latitude,
+        string longitude,
+        uint256 credits,
+        uint256 tokenAmount,
+        address admin,
+        uint256 timestamp
+    );
+    event VideoRejected(
+        uint256 indexed submissionId,
+        uint256 indexed videoIndex,
+        address indexed ngoWallet,
+        string ipfsHash,
+        string reason,
+        address admin,
+        uint256 timestamp
+    );
 
     // ------------------------------------
     // MODIFIERS
@@ -123,9 +159,11 @@ contract BlueCarbon {
     // ------------------------------------
     // IMAGE APPROVAL
     // ------------------------------------
-    function approveImage(uint256 _submissionId, uint256 _imageIndex, uint256 _credits)
-        external onlyAdmin submissionExists(_submissionId)
-    {
+    function approveImage(
+        uint256 _submissionId,
+        uint256 _imageIndex,
+        uint256 _credits
+    ) external onlyAdmin submissionExists(_submissionId) {
         PlantingSubmission storage submission = submissions[_submissionId];
         require(_imageIndex < submission.images.length, "Image index OOB");
 
@@ -149,46 +187,51 @@ contract BlueCarbon {
         require(token.balanceOf(address(this)) >= tokenAmount, "Insufficient tokens in contract");
         token.transfer(submission.ngoWallet, tokenAmount);
 
-        emit ImageApproved(_submissionId, _imageIndex, submission.ngoWallet, img.ipfsHash, img.latitude, img.longitude, _credits, tokenAmount, msg.sender, block.timestamp);
+        emit ImageApproved(
+            _submissionId,
+            _imageIndex,
+            submission.ngoWallet,
+            img.ipfsHash,
+            img.latitude,
+            img.longitude,
+            _credits,
+            tokenAmount,
+            msg.sender,
+            block.timestamp
+        );
     }
 
-function rejectImage(uint256 _submissionId, uint256 _imageIndex, string memory _reason)
-    external onlyAdmin submissionExists(_submissionId)
-{
-    PlantingSubmission storage submission = submissions[_submissionId];
-    Image storage img = submission.images[_imageIndex];
+    function rejectImage(
+        uint256 _submissionId,
+        uint256 _imageIndex,
+        string memory _reason
+    ) external onlyAdmin submissionExists(_submissionId) {
+        PlantingSubmission storage submission = submissions[_submissionId];
+        Image storage img = submission.images[_imageIndex];
+        img.status = "rejected";
+        img.reason = _reason;
+        img.approvedBy = msg.sender;
+        img.approvedAt = block.timestamp;
 
-    // Optional: store previous status
-    string memory prevStatus = img.status;
-
-    // Update status to rejected
-    img.status = "rejected";
-    img.reason = _reason;
-    img.approvedBy = msg.sender;
-    img.approvedAt = block.timestamp;
-
-    emit ImageRejected(
-        _submissionId,
-        _imageIndex,
-        submission.ngoWallet,
-        img.ipfsHash,
-        _reason,
-        msg.sender,
-        block.timestamp
-    );
-
-    // Optionally, log if it was previously verified
-    if (keccak256(bytes(prevStatus)) == keccak256(bytes("verified"))) {
-        // For off-chain tracking, front-end or event logs can use this
+        emit ImageRejected(
+            _submissionId,
+            _imageIndex,
+            submission.ngoWallet,
+            img.ipfsHash,
+            _reason,
+            msg.sender,
+            block.timestamp
+        );
     }
-}
 
     // ------------------------------------
     // VIDEO APPROVAL
     // ------------------------------------
-    function approveVideo(uint256 _submissionId, uint256 _videoIndex, uint256 _credits)
-        external onlyAdmin submissionExists(_submissionId)
-    {
+    function approveVideo(
+        uint256 _submissionId,
+        uint256 _videoIndex,
+        uint256 _credits
+    ) external onlyAdmin submissionExists(_submissionId) {
         PlantingSubmission storage submission = submissions[_submissionId];
         Video storage vid = submission.videos[_videoIndex];
         require(keccak256(bytes(vid.status)) != keccak256(bytes("verified")), "Video already verified");
@@ -210,71 +253,54 @@ function rejectImage(uint256 _submissionId, uint256 _imageIndex, string memory _
         require(token.balanceOf(address(this)) >= tokenAmount, "Insufficient tokens in contract");
         token.transfer(submission.ngoWallet, tokenAmount);
 
-        emit VideoApproved(_submissionId, _videoIndex, submission.ngoWallet, vid.ipfsHash, vid.latitude, vid.longitude, _credits, tokenAmount, msg.sender, block.timestamp);
+        emit VideoApproved(
+            _submissionId,
+            _videoIndex,
+            submission.ngoWallet,
+            vid.ipfsHash,
+            vid.latitude,
+            vid.longitude,
+            _credits,
+            tokenAmount,
+            msg.sender,
+            block.timestamp
+        );
     }
 
- function rejectVideo(uint256 _submissionId, uint256 _videoIndex, string memory _reason)
-    external onlyAdmin submissionExists(_submissionId)
-{
-    PlantingSubmission storage submission = submissions[_submissionId];
-    Video storage vid = submission.videos[_videoIndex];
-
-    string memory prevStatus = vid.status;
-
-    vid.status = "rejected";
-    vid.reason = _reason;
-    vid.approvedBy = msg.sender;
-    vid.approvedAt = block.timestamp;
-
-    emit VideoRejected(_submissionId, _videoIndex, submission.ngoWallet, vid.ipfsHash, _reason, msg.sender, block.timestamp);
-
-    // Optional: track previous status if needed
-    if (keccak256(bytes(prevStatus)) == keccak256(bytes("verified"))) {}
-}
-
-
-    // ------------------------------------
-    // SUBMISSION APPROVAL
-    // ------------------------------------
-    function approveSubmission(uint256 _submissionId) external onlyAdmin submissionExists(_submissionId) {
+    function rejectVideo(
+        uint256 _submissionId,
+        uint256 _videoIndex,
+        string memory _reason
+    ) external onlyAdmin submissionExists(_submissionId) {
         PlantingSubmission storage submission = submissions[_submissionId];
-        require(keccak256(bytes(submission.status)) != keccak256(bytes("approved")), "Already approved");
+        Video storage vid = submission.videos[_videoIndex];
+        vid.status = "rejected";
+        vid.reason = _reason;
+        vid.approvedBy = msg.sender;
+        vid.approvedAt = block.timestamp;
 
-        uint256 totalCredits = 0;
-
-        for (uint i = 0; i < submission.images.length; i++) {
-            if (keccak256(bytes(submission.images[i].status)) == keccak256(bytes("verified"))) {
-                totalCredits += submission.images[i].credits;
-            }
-        }
-
-        for (uint j = 0; j < submission.videos.length; j++) {
-            if (keccak256(bytes(submission.videos[j].status)) == keccak256(bytes("verified"))) {
-                totalCredits += submission.videos[j].credits;
-            }
-        }
-
-        submission.status = "approved";
-        carbonCredits[submission.ngoWallet] += totalCredits;
-
-        uint256 tokenAmount = totalCredits * tokenPerCredit;
-        require(token.balanceOf(address(this)) >= tokenAmount, "Insufficient tokens in contract");
-        token.transfer(submission.ngoWallet, tokenAmount);
-
-        emit SubmissionApproved(_submissionId, submission.ngoWallet, totalCredits, tokenAmount);
-    }
-
-    function rejectSubmission(uint256 _submissionId) external onlyAdmin submissionExists(_submissionId) {
-        PlantingSubmission storage submission = submissions[_submissionId];
-        submission.status = "rejected";
-
-        emit SubmissionRejected(_submissionId, submission.ngoWallet);
+        emit VideoRejected(
+            _submissionId,
+            _videoIndex,
+            submission.ngoWallet,
+            vid.ipfsHash,
+            _reason,
+            msg.sender,
+            block.timestamp
+        );
     }
 
     // ------------------------------------
-    // USER FUNCTIONS
+    // SUBMISSION (PROJECT) - ONLY ONCHAIN
     // ------------------------------------
-    function submitProject(string memory ngoName, string memory ngoEmail, string memory title, string[] memory ipfsHashes, string[] memory latitudes, string[] memory longitudes) external {
+    function submitProject(
+        string memory ngoName,
+        string memory ngoEmail,
+        string memory title,
+        string[] memory ipfsHashes,
+        string[] memory latitudes,
+        string[] memory longitudes
+    ) external {
         require(ipfsHashes.length == latitudes.length && latitudes.length == longitudes.length, "Array length mismatch");
 
         submissionCount++;
