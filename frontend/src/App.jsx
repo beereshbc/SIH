@@ -8,6 +8,7 @@ import Community from "./pages/Community";
 import Login from "./pages/Login";
 import toast, { Toaster } from "react-hot-toast";
 import { useAppContext } from "./context/AppContext";
+import NotFound from "./components/NotFound";
 
 const App = () => {
   const { token } = useAppContext();
@@ -16,6 +17,7 @@ const App = () => {
       <Toaster />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="*" element={<NotFound />} />
         {token ? (
           <>
             <Route path="/registry" element={<Registry />} />

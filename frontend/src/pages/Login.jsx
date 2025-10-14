@@ -1,6 +1,6 @@
 // pages/Login.jsx
 import { motion, AnimatePresence } from "framer-motion";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { User, Mail, Lock, Eye, EyeOff, Wallet, MapPin } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { useAppContext } from "../context/AppContext";
@@ -9,11 +9,13 @@ import { connectWallet as connectWalletUtil } from "../utils/wallet";
 
 const Login = () => {
   const [state, setState] = useState("login"); // login or register
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [ngoLocation, setNgoLocation] = useState("");
-  const [walletAddress, setWalletAddress] = useState("");
+  const [name, setName] = useState("INDIAN");
+  const [email, setEmail] = useState("sih@gmail.com");
+  const [password, setPassword] = useState("12345678@sih");
+  const [ngoLocation, setNgoLocation] = useState("INDIA");
+  const [walletAddress, setWalletAddress] = useState(
+    "0xb5f620762f34Dd1EDe96574848BBC573D6A8Ff0D"
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -83,6 +85,12 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    toast.success(
+      "Use Given Dummy data to Open portal or Use your Own Dummy Data"
+    );
+  });
 
   return (
     <>

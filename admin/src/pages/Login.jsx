@@ -4,14 +4,15 @@ import axios from "axios";
 import { useAppContext } from "../context/AppContext";
 import { connectWallet as walletConnect } from "../utils/wallet"; // wallet util
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect } from "react";
 
 export default function AdminAuth() {
   const [mode, setMode] = useState("signup"); // signup | login
   const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    blockchainAddress: "",
+    name: "INDIAN",
+    email: "sih@gmail.com",
+    password: "12345678@sih",
+    blockchainAddress: "0xb5f620762f34Dd1EDe96574848BBC573D6A8Ff0D",
   });
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -69,6 +70,10 @@ export default function AdminAuth() {
     visible: { opacity: 1, y: 0 },
     exit: { opacity: 0, y: 20 },
   };
+
+  useEffect(() => {
+    alert("Use Given Dummy data to Open portal or Use your Own Dummy Data");
+  });
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">

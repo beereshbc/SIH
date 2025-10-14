@@ -12,6 +12,7 @@ import Transactions from "./pages/Transactions";
 import toast, { Toaster } from "react-hot-toast";
 import AddAdmin from "./pages/AddAdmin";
 import TransactionDetails from "./pages/TransactionDetails";
+import NotFound from "./components/NotFound";
 
 const App = () => {
   const { atoken } = useAppContext();
@@ -23,6 +24,7 @@ const App = () => {
       <Toaster />
       <AdminLayout>
         <Routes>
+          <Route path="*" element={<NotFound />} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/verification" element={<Verification />} />
